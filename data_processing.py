@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 # Set to true for a verbose output
 DEBUG = False
@@ -97,16 +98,18 @@ class EpigeneticsData(object):
     gene_expressions_file.seek(0)
     embryoId_to_geneExpressions = extract_embryoId_to_geneExpressions(gene_expressions_file, geneId_to_geneEntropy)
 
+    embryoIds = embryoId_to_embryoStage.keys()
+    input_data_size = len(embryoId_to_geneExpressions[embryoIds[0]])
+
     gene_expressions_file.close()
     embryo_stage_file.close()
 
     embryoStages = embryoStage_to_embryoIds.keys()
     embryoStage_to_oneHotEncoding = create_oneHotEncoding(embryoStages)
+    label_size = len(embryoStages)
     print embryoStage_to_oneHotEncoding
 
     training_embryoIds = []
-    training_data = []
-    training_labels = []
 
     validation_embryoIds = []
     validation_data = []
@@ -128,15 +131,38 @@ class EpigeneticsData(object):
             validation_embryoIds += embryoIds[2:4]
             training_embryoIds += embryoIds[4:]
 
-    for embryoId in training_embryoIds:
-        training_data += embryoId_to_geneExpressions[embryoId]
-        training_labels += [embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]]
+    training_data = np.ndarray(shape=(len(training_embryoIds), input_data_size),
+                               dtype=np.float32)
+    training_labels = np.ndarray(shape=(len(training_embryoIds), label_size),
+                                 dtype=np.float32)
 
+    np.random.shuffle(training_embryoIds)
+    index = 0
+    for embryoId in training_embryoIds:
+        training_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        training_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
+        index += 1
+
+    validation_data = np.ndarray(shape=(len(validation_embryoIds), input_data_size),
+                                 dtype=np.float32)
+    validation_labels = np.ndarray(shape=(len(validation_embryoIds), label_size),
+                                   dtype=np.float32)
+
+    np.random.shuffle(validation_embryoIds)
+    index = 0
     for embryoId in validation_embryoIds:
-        validation_data += embryoId_to_geneExpressions[embryoId]
-        validation_labels += [embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]]
+        validation_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        validation_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
+        index += 1
 
-    for embryoId in training_embryoIds:
-        test_data += embryoId_to_geneExpressions[embryoId]
-        test_labels += [embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]]
+    test_data = np.ndarray(shape=(len(test_embryoIds), input_data_size),
+                           dtype=np.float32)
+    test_labels = np.ndarray(shape=(len(test_embryoIds), label_size),
+                             dtype=np.float32)
 
+    np.random.shuffle(test_embryoIds)
+    index = 0
+    for embryoId in test_embryoIds:
+        test_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        test_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
+        index += 1
