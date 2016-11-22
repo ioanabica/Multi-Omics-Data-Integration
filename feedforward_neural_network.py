@@ -4,8 +4,8 @@ import tensorflow as tf
 from data_processing import EpigeneticsData
 
 # constants
-hidden_units_1 = 1024
-hidden_units_2 = 512
+hidden_units_1 = 64
+hidden_units_2 = 32
 learning_rate = 0.5
 batch_size = 16
 
@@ -98,10 +98,11 @@ class FeedForwardNeuralNetwork(object):
 
         optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
         prediction_accuracy = compute_prediction_accuracy(logits, tf_training_labels)
+        print prediction_accuracy
 
         training_prediction = tf.nn.softmax(logits)
 
-    steps = 801
+    steps = 3001
     with tf.Session(graph=graph) as session:
         tf.initialize_all_variables().run()
         for step in range(steps):
@@ -117,5 +118,5 @@ class FeedForwardNeuralNetwork(object):
             _, loss, predictions = session.run(
                 [optimizer, training_loss, training_prediction], feed_dict=feed_dictionary)
 
-            if (step % 100 == 0):
+            if (step % 500 == 0):
                 print("Minibatch loss at step %d: %f" % (step, loss))
