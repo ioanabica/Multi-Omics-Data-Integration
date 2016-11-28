@@ -66,10 +66,11 @@ def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
 
     for line in file:
         line_elements = line.split()
-        if (geneId_to_geneEntropy[line_elements[0]] > 6.0) & (len(line_elements) == len(embryoIds) + 1):
+        if (geneId_to_geneEntropy[line_elements[0]] > 6.2) & (len(line_elements) == len(embryoIds) + 1):
             for index in range(len(embryoIds)):
                 embryoId_to_geneExpressions[embryoIds[index]] += [line_elements[index+1]]
 
+    print len(embryoId_to_geneExpressions['GSM896803'])
     return embryoId_to_geneExpressions
 
 def create_oneHotEncoding(embryoStages):
@@ -107,7 +108,6 @@ class EpigeneticsData(object):
     embryoStages = embryoStage_to_embryoIds.keys()
     embryoStage_to_oneHotEncoding = create_oneHotEncoding(embryoStages)
     label_size = len(embryoStages)
-    print embryoStage_to_oneHotEncoding
 
     training_embryoIds = []
 
@@ -131,6 +131,8 @@ class EpigeneticsData(object):
             validation_embryoIds += embryoIds[2:4]
             training_embryoIds += embryoIds[4:]
 
+
+    # create training data
     training_data = np.ndarray(shape=(len(training_embryoIds), input_data_size),
                                dtype=np.float32)
     training_labels = np.ndarray(shape=(len(training_embryoIds), label_size),
@@ -139,10 +141,11 @@ class EpigeneticsData(object):
     np.random.shuffle(training_embryoIds)
     index = 0
     for embryoId in training_embryoIds:
-        training_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        training_data[index, :] =  compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
         training_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
         index += 1
 
+    # create validation data
     validation_data = np.ndarray(shape=(len(validation_embryoIds), input_data_size),
                                  dtype=np.float32)
     validation_labels = np.ndarray(shape=(len(validation_embryoIds), label_size),
@@ -151,10 +154,11 @@ class EpigeneticsData(object):
     np.random.shuffle(validation_embryoIds)
     index = 0
     for embryoId in validation_embryoIds:
-        validation_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        validation_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
         validation_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
         index += 1
 
+    # create test data
     test_data = np.ndarray(shape=(len(test_embryoIds), input_data_size),
                            dtype=np.float32)
     test_labels = np.ndarray(shape=(len(test_embryoIds), label_size),
@@ -163,6 +167,7 @@ class EpigeneticsData(object):
     np.random.shuffle(test_embryoIds)
     index = 0
     for embryoId in test_embryoIds:
-        test_data[index, :] = embryoId_to_geneExpressions[embryoId]
+        test_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
         test_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
         index += 1
+
