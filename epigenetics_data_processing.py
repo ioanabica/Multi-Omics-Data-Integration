@@ -1,8 +1,8 @@
 import math
 import numpy as np
 
-# Set to true for a verbose output
-DEBUG = False
+# Set the gene entropy threshold for selecting the gene
+gene_entropy_threshold = 6.2
 
 # normalize the gene expressions to obtain a probability distribution
 def compute_probability_distribution(gene_expressions):
@@ -66,7 +66,8 @@ def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
 
     for line in file:
         line_elements = line.split()
-        if (geneId_to_geneEntropy[line_elements[0]] > 6.2) & (len(line_elements) == len(embryoIds) + 1):
+        if (geneId_to_geneEntropy[line_elements[0]] > gene_entropy_threshold) & \
+                (len(line_elements) == len(embryoIds) + 1):
             for index in range(len(embryoIds)):
                 embryoId_to_geneExpressions[embryoIds[index]] += [line_elements[index+1]]
 
