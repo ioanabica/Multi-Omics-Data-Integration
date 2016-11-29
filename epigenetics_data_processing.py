@@ -4,8 +4,14 @@ import numpy as np
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.2
 
-# normalize the gene expressions to obtain a probability distribution
+
 def compute_probability_distribution(gene_expressions):
+    """
+    Normalize the gene expressions to obtain a probability distribution
+
+    :param gene_expressions:
+    :return:
+    """
     gene_expressions_sum = 0.0
     for gene_expression in gene_expressions:
         gene_expressions_sum += float(gene_expression)
@@ -15,7 +21,13 @@ def compute_probability_distribution(gene_expressions):
 
     return normalized_gene_expressions
 
+
 def compute_gene_entropy(gene_expressions):
+    """
+
+    :param gene_expressions:
+    :return:
+    """
     gene_entropy = 0.0
     for gene_expression in gene_expressions:
         if float(gene_expression) > 0.0:
@@ -23,8 +35,14 @@ def compute_gene_entropy(gene_expressions):
 
     return gene_entropy
 
-# create a dictionary from an embryoId to the corresponding development stage
+
 def extract_embryoId_to_embryoStage(file):
+    """
+    Create a dictionary from an embryoId to the corresponding development stage
+
+    :param file:
+    :return:
+    """
     embryoId_to_embryoStage = dict()
     file.readline()
     for line in file:
@@ -32,8 +50,14 @@ def extract_embryoId_to_embryoStage(file):
         embryoId_to_embryoStage[line_elements[0]] = line_elements[1]
     return embryoId_to_embryoStage
 
-# create a dictionary from an embryo development stage to a list of the corresponding embroyIds
+
 def extract_embryoStage_to_embryoIds(file):
+    """
+    Create a dictionary from an embryo development stage to a list of the corresponding embroyIds
+
+    :param file:
+    :return:
+    """
     embryoStage_to_embryoIds = dict()
     file.readline()
     for line in file:
@@ -44,7 +68,13 @@ def extract_embryoStage_to_embryoIds(file):
             embryoStage_to_embryoIds[line_elements[1]] = [line_elements[0]]
     return embryoStage_to_embryoIds
 
+
 def extract_geneId_to_geneEntorpy(file):
+    """
+
+    :param file:
+    :return:
+    """
     geneId_to_geneEntropy = dict()
     file.readline()
     for line in file:
@@ -55,6 +85,12 @@ def extract_geneId_to_geneEntorpy(file):
     return geneId_to_geneEntropy
 
 def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
+    """
+
+    :param file:
+    :param geneId_to_geneEntropy:
+    :return:
+    """
     embryoId_to_geneExpressions = dict()
 
     #read first line and create an entry in the dictionary for each embryoId
@@ -75,6 +111,11 @@ def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
     return embryoId_to_geneExpressions
 
 def create_oneHotEncoding(embryoStages):
+    """
+
+    :param embryoStages:
+    :return:
+    """
     embryoStage_to_oneHotEncoding = dict()
 
     for index in range(len(embryoStages)):
@@ -85,8 +126,9 @@ def create_oneHotEncoding(embryoStages):
     return embryoStage_to_oneHotEncoding
 
 """
-Class that processes the epigenetics dataset
+Class that extracts the epigenetics dataset
 """
+
 class EpigeneticsData(object):
 
     gene_expressions_file = open('data/epigenetics_data/human_early_embryo_gene_expression.txt', 'r')

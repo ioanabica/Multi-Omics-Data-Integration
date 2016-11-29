@@ -133,7 +133,15 @@ def inference(input_data, weights, biases):
 
 def create_feed_dictionary(
         placeholder_data, placeholder_labels, placeholder_keep_probability, data, labels, keep_probability):
-    # create a dictionary form the placeholder data to the real data
+    """
+    :param placeholder_data:
+    :param placeholder_labels:
+    :param placeholder_keep_probability:
+    :param data:
+    :param labels:
+    :param keep_probability:
+    :return: a dictionary form the placeholder data to the real data
+    """
     feed_dictionary = {
         placeholder_data: data,
         placeholder_labels: labels,
@@ -143,6 +151,11 @@ def create_feed_dictionary(
 
 
 def compute_loss(logits, labels):
+    """
+    :param logits:
+    :param labels:
+    :return:
+    """
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
     loss = tf.reduce_mean(cross_entropy)
 
@@ -150,6 +163,11 @@ def compute_loss(logits, labels):
 
 
 def compute_predictions_accuracy(predictions, labels):
+    """
+    :param predictions: labels given by the feedforward neural network
+    :param labels: correct labels for the input date
+    :return: percentage of predictions that match the correct labels
+    """
     num_correct_labels = 0
     for index in range(predictions.shape[0]):
         if np.argmax(predictions[index]) == np.argmax(labels[index]):
