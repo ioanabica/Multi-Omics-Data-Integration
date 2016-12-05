@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import tensorflow as tf
-from epigenetics_data_processing import EpigeneticsData
 
 # Hyperparameters
 hidden_units_1 = 256
@@ -16,7 +15,8 @@ learning_rate = 0.5
 batch_size = 16
 
 
-def initialize_weights_and_biases(input_data_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, label_size):
+def initialize_weights_and_biases(
+        input_data_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size):
     """
     Initialize the weights for the neural network using He initialization and intialize the biases to zero
     :param input_data_size: number of gene used in the input layer
@@ -24,7 +24,7 @@ def initialize_weights_and_biases(input_data_size, hidden_units_1, hidden_units_
     :param hidden_units_2: number of hidden neurons in the second layer
     :param hidden_units_3: number of hidden neurons in the third layer
     :param hidden_units_4: number of hidden neurons in the forth layer
-    :param label_size: number of classes in the output layer
+    :param output_size: number of classes in the output layer
     :return: weights dictionary
     :return: biases dictionary
     """
@@ -72,23 +72,24 @@ def initialize_weights_and_biases(input_data_size, hidden_units_1, hidden_units_
     biases_forth_hidden_layer = tf.Variable(tf.zeros(hidden_units_4))
     biases['biases_forth_hidden_layer'] = biases_forth_hidden_layer
 
-    #weights for forth layer
+    # weights for forth layer
     weights_forth_hidden_layer = tf.Variable(
-        tf.truncated_normal([hidden_units_4, label_size], stddev=math.sqrt(2.0/float(hidden_units_4))))
+        tf.truncated_normal([hidden_units_4, output_size], stddev=math.sqrt(2.0/float(hidden_units_4))))
     weights['weights_forth_hidden_layer'] = weights_forth_hidden_layer
 
     # biases for output layer
-    biases_output_layer = tf.Variable(tf.zeros(label_size))
+    biases_output_layer = tf.Variable(tf.zeros(output_size))
     biases['biases_output_layer'] = biases_output_layer
 
     return weights, biases
 
 
-def inference(input_data, weights, biases):
+def inference(input_data, weights, biases, keep_probability):
     """
     :param input_data:  input to the feedforward neural network for which the model is run
     :param weights: the weights for the layers of the neural network
     :param biases: the biases for the layers of the neural network
+    :param keep_probability: the probability for a neuron in the hidden layers to be used during dropout
     :return: logits: the output of the feed forward neural network
     """
 
@@ -105,8 +106,9 @@ def inference(input_data, weights, biases):
         tf.matmul(first_hidden_layer, weights['weights_first_hidden_layer']) + biases['biases_second_hidden_layer']
     mean, variance = tf.nn.moments(input_to_second_hidden_layer, [0])
 
-    second_hidden_layer = tf.nn.relu(
-        tf.nn.batch_normalization(input_to_second_hidden_layer, mean, variance, None, None, epsilon))
+    second_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_second_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
 
     # third hidden layer
     input_to_third_hidden_layer = \
@@ -123,7 +125,7 @@ def inference(input_data, weights, biases):
 
     forth_hidden_layer = tf.nn.dropout(tf.nn.relu(
         tf.nn.batch_normalization(input_to_forth_hidden_layer, mean, variance, None, None, epsilon)),
-        tf_keep_probability)
+        keep_probability)
 
     # output layer
     logits = tf.matmul(forth_hidden_layer, weights['weights_forth_hidden_layer']) + biases['biases_output_layer']
@@ -176,84 +178,82 @@ def compute_predictions_accuracy(predictions, labels):
     return (100 * num_correct_labels)/predictions.shape[0]
 
 
-epigeneticsData = EpigeneticsData()
+def train_feed_forward_neural_network(training_dataset, validation_dataset, input_data_size, output_size):
+    """
+    Train the feed forward neural network using gradient descent by trying to minimize the loss.
+    This function is used for cross validation.
 
-training_data = epigeneticsData.training_data
-training_labels = epigeneticsData.training_labels
+    :param training_dataset: dictionary containing the training data and training labels
+    :param validation_dataset: dictionary containing the validation data and validation labels
+    :param input_data_size: the size of the input to the neural network
+    :param output_size: the number of labels in the output
+    :return: the validation accuracy of the model
+    """
 
-validation_data = epigeneticsData.validation_data
-validation_labels = epigeneticsData.validation_labels
+    training_data = training_dataset["training_data"]
+    training_labels = training_dataset["training_labels"]
 
-test_data = epigeneticsData.test_data
-test_labels = epigeneticsData.test_labels
+    validation_data = validation_dataset["validation_data"]
+    validation_labels = validation_dataset["validation_labels"]
 
-graph = tf.Graph()
-with graph.as_default():
+    graph = tf.Graph()
+    with graph.as_default():
 
-    # create placeholders for input tensors
-    tf_input_data = tf.placeholder(tf.float32, shape=(None, epigeneticsData.input_data_size))
-    tf_input_labels = tf.placeholder(tf.float32, shape=(None, epigeneticsData.label_size))
+        # create placeholders for input tensors
+        tf_input_data = tf.placeholder(tf.float32, shape=(None, input_data_size))
+        tf_input_labels = tf.placeholder(tf.float32, shape=(None, output_size))
 
-    # create placeholder for the keep probability
-    # dropout is used during training, but not during testing
-    tf_keep_probability = tf.placeholder(tf.float32)
+        # create placeholder for the keep probability
+        # dropout is used during training, but not during testing
+        tf_keep_probability = tf.placeholder(tf.float32)
 
-    tf_validation_data = tf.constant(validation_data)
-    tf_test_data = tf.constant(test_data)
+        weights, biases = initialize_weights_and_biases(
+            input_data_size,
+            hidden_units_1,
+            hidden_units_2,
+            hidden_units_3,
+            hidden_units_4,
+            output_size)
 
-    weights, biases = initialize_weights_and_biases(
-        epigeneticsData.input_data_size,
-        hidden_units_1,
-        hidden_units_2,
-        hidden_units_3,
-        hidden_units_4,
-        epigeneticsData.label_size)
+        logits = inference(tf_input_data, weights, biases, tf_keep_probability)
+        training_loss = compute_loss(logits, tf_input_labels)
 
-    logits = inference(tf_input_data, weights, biases)
-    training_loss = compute_loss(logits, tf_input_labels)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
+        training_predictions = tf.nn.softmax(logits)
+        validation_predictions = tf.nn.softmax(inference(validation_data, weights, biases, tf_keep_probability))
 
-    training_predictions = tf.nn.softmax(logits)
-    validation_predictions = tf.nn.softmax(inference(tf_validation_data, weights, biases))
-    test_predictions = tf.nn.softmax(inference(tf_test_data, weights, biases))
+    steps = 3000
+    with tf.Session(graph=graph) as session:
 
-steps = 3001
-with tf.Session(graph=graph) as session:
+        # initialize weights and biases
+        tf.initialize_all_variables().run()
 
-    # initialize weights and biases
-    tf.initialize_all_variables().run()
+        for step in range(steps):
 
-    for step in range(steps):
+            offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
 
-        offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
+            # Create a training minibatch.
+            minibatch_data = training_data[offset:(offset + batch_size), :]
+            minibatch_labels = training_labels[offset:(offset + batch_size), :]
 
-        # Create a training minibatch.
-        minibatch_data = training_data[offset:(offset + batch_size), :]
-        minibatch_labels = training_labels[offset:(offset + batch_size), :]
-
-        feed_dictionary = create_feed_dictionary(
-            tf_input_data, tf_input_labels, tf_keep_probability,
-            minibatch_data, minibatch_labels, keep_probability)
-
-        _, loss, predictions = session.run(
-            [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
-
-        if (step % 500 == 0):
-            print('Minibatch loss at step %d: %f' % (step, loss))
-            print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
-
-            validation_feed_dictionary = create_feed_dictionary(
+            feed_dictionary = create_feed_dictionary(
                 tf_input_data, tf_input_labels, tf_keep_probability,
-                validation_data, validation_labels, 1.0)
-            print('Validation accuracy: %.1f%%' %
-                 compute_predictions_accuracy(
-                     validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels))
+                minibatch_data, minibatch_labels, keep_probability)
 
-    test_feed_dictionary = create_feed_dictionary(
-        tf_input_data, tf_input_labels, tf_keep_probability,
-        test_data, test_labels, 1.0)
+            _, loss, predictions = session.run(
+                [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
-    print('Test accuracy: %.1f%%' %
-          compute_predictions_accuracy(
-              test_predictions.eval(feed_dict=test_feed_dictionary), test_labels))
+            if (step % 500 == 0):
+                print('Minibatch loss at step %d: %f' % (step, loss))
+                print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
+
+        validation_feed_dictionary = create_feed_dictionary(
+            tf_input_data, tf_input_labels, tf_keep_probability,
+            validation_data, validation_labels, 1.0)
+        validation_accuracy = compute_predictions_accuracy(
+                  validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
+        print('Validation accuracy: %.1f%%' % validation_accuracy)
+        return validation_accuracy
+
