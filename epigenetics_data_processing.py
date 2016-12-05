@@ -4,7 +4,7 @@ import numpy as np
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.2
 # Number of k folds
-k = 6
+k = 4
 
 
 def compute_probability_distribution(gene_expressions):
@@ -177,14 +177,10 @@ def create_training_dataset(
     training_labels = np.ndarray(shape=(len(training_embryoIds), output_size),
                                  dtype=np.float32)
     np.random.shuffle(training_embryoIds)
-    print "Training Data"
     index = 0
     for embryoId in training_embryoIds:
-        print embryoId
         training_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
-        print embryoId_to_geneExpressions[embryoId]
         training_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
-        print training_labels[index, :]
         index += 1
 
     training_dataset["training_data"] = training_data
@@ -268,36 +264,35 @@ def create_test_dataset(
 
     return test_dataset
 
-def create_k_folds_embryoIds(k, embryoStage_to_embryoIds):
+def create_k_fold_embryoIds(k, embryoStage_to_embryoIds):
     """
 
     :param k:
     :param embryoStage_to_embryoIds:
     :return:
     """
-    k_folds_embryoIds = dict()
+    k_fold_embryoIds = dict()
     for index in range(k):
-        k_folds_embryoIds[index] = []
+        k_fold_embryoIds[index] = []
 
     embryoStages = embryoStage_to_embryoIds.keys()
     for embryoStage in embryoStages:
         embryoIds = embryoStage_to_embryoIds[embryoStage]
-        np.random.shuffle(embryoIds)
         if len(embryoIds) < k:
             for index in range(len(embryoIds)):
-                k_folds_embryoIds[index] += [embryoIds[index]]
+                k_fold_embryoIds[index] += [embryoIds[index]]
         else:
             group_size = len(embryoIds)/k
             for index in range(k-1):
-                k_folds_embryoIds[index] += embryoIds[index*group_size:(index+1)*group_size]
-            k_folds_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
+                k_fold_embryoIds[index] += embryoIds[index*group_size:(index+1)*group_size]
+            k_fold_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
 
-    return k_folds_embryoIds
+    return k_fold_embryoIds
 
 
-def create_k_folds_datasets(
+def create_k_fold_datasets(
         k,
-        k_folds_embryoIds,
+        k_fold_embryoIds,
         input_data_size,
         output_size,
         embryoId_to_geneExpressions,
@@ -306,7 +301,7 @@ def create_k_folds_datasets(
     """
 
     :param k:
-    :param k_folds_embryoIds:
+    :param k_fold_embryoIds:
     :param input_data_size:
     :param output_size:
     :param embryoId_to_geneExpressions:
@@ -315,16 +310,17 @@ def create_k_folds_datasets(
     :return:
     """
 
-    k_folds_datasets = dict()
+    k_fold_datasets = dict()
     for index in range(k):
-        k_folds_datasets[index] = dict()
+        k_fold_datasets[index] = dict()
 
     for index_i in range(k):
-        validation_embryoIds = k_folds_embryoIds[index_i]
+        validation_embryoIds = k_fold_embryoIds[index_i]
         training_embryoIds = []
         for index_j in range(k):
             if index_j != index_i:
-                training_embryoIds += k_folds_embryoIds[index_j]
+                training_embryoIds += k_fold_embryoIds[index_j]
+
         print index_i
         print validation_embryoIds
         print training_embryoIds
@@ -345,10 +341,10 @@ def create_k_folds_datasets(
             embryoStage_to_oneHotEncoding,
             embryoId_to_embryoStage)
 
-        k_folds_datasets[index_i]["training_dataset"] = training_dataset
-        k_folds_datasets[index_i]["validation_dataset"] = validation_dataset
+        k_fold_datasets[index_i]["training_dataset"] = training_dataset
+        k_fold_datasets[index_i]["validation_dataset"] = validation_dataset
 
-    return k_folds_datasets
+    return k_fold_datasets
 
 """
 Class that extracts the epigenetics dataset
@@ -375,12 +371,12 @@ class EpigeneticsData(object):
 
     embryoStages = embryoStage_to_embryoIds.keys()
     embryoStage_to_oneHotEncoding = create_oneHotEncoding(embryoStages)
-    print embryoStage_to_oneHotEncoding
     output_size = len(embryoStages)
 
     training_embryoIds, validation_embryoIds, test_embryoIds = \
         extract_training_validation_test_embryoIds(embryoStage_to_embryoIds)
-
+    print training_embryoIds
+    print validation_embryoIds
 
     training_dataset = create_training_dataset(
         training_embryoIds,
@@ -406,12 +402,12 @@ class EpigeneticsData(object):
         embryoStage_to_oneHotEncoding,
         embryoId_to_embryoStage)
 
-    k_folds_embryoIds = create_k_folds_embryoIds(k, embryoStage_to_embryoIds)
-    print k_folds_embryoIds
+    k_fold_embryoIds = create_k_fold_embryoIds(k, embryoStage_to_embryoIds)
+    print k_fold_embryoIds
 
-    k_folds_datasets = create_k_folds_datasets(
+    k_fold_datasets = create_k_fold_datasets(
         k,
-        k_folds_embryoIds,
+        k_fold_embryoIds,
         input_data_size,
         output_size,
         embryoId_to_geneExpressions,

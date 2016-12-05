@@ -11,14 +11,14 @@ keep_probability = 0.5
 epsilon = 1e-3
 
 # Training parameters
-learning_rate = 0.5
+learning_rate = 0.05
 batch_size = 16
 
 
 def initialize_weights_and_biases(
         input_data_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size):
     """
-    Initialize the weights for the neural network using He initialization and intialize the biases to zero
+    Initialize the weights for the neural network using He initialization and initialize the biases to zero
     :param input_data_size: number of gene used in the input layer
     :param hidden_units_1: number of hidden neurons in the first layer
     :param hidden_units_2: number of hidden neurons in the second layer
@@ -98,8 +98,9 @@ def inference(input_data, weights, biases, keep_probability):
         tf.matmul(input_data, weights['weights_input_layer']) + biases['biases_first_hidden_layer']
     mean, variance = tf.nn.moments(input_to_first_hidden_layer, [0])
 
-    first_hidden_layer = tf.nn.relu(
-        tf.nn.batch_normalization(input_to_first_hidden_layer, mean, variance, None, None, epsilon))
+    first_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_first_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
 
     # second hidden layer
     input_to_second_hidden_layer = \
