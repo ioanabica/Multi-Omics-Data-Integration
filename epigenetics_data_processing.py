@@ -4,7 +4,7 @@ import numpy as np
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.2
 # Number of k folds
-k = 4
+k = 6
 
 
 def compute_probability_distribution(gene_expressions):
@@ -375,6 +375,10 @@ class EpigeneticsData(object):
 
     training_embryoIds, validation_embryoIds, test_embryoIds = \
         extract_training_validation_test_embryoIds(embryoStage_to_embryoIds)
+
+
+    training_embryoIds += test_embryoIds
+
     print training_embryoIds
     print validation_embryoIds
 
