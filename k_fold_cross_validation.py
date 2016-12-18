@@ -1,6 +1,7 @@
 import numpy
 from epigenetics_data_processing import EpigeneticsData
-from feedforward_neural_network import train_feed_forward_neural_network
+from feedforward_neural_network import train_feedforward_neural_network
+from recurrent_neural_network import train_recurrent_neural_network
 
 epigeneticsData = EpigeneticsData()
 k_fold_datasets = epigeneticsData.k_fold_datasets
@@ -15,7 +16,7 @@ for key in keys:
     print len(training_dataset["training_data"])
     validation_dataset = k_fold_datasets[key]["validation_dataset"]
     print len(validation_dataset["validation_data"])
-    accuracy = train_feed_forward_neural_network(training_dataset, validation_dataset, input_data_size,
+    accuracy = train_recurrent_neural_network(training_dataset, validation_dataset, input_data_size,
                                                             output_size)
     validation_accuracy += [accuracy]
     print "key number" + str(key)

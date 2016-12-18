@@ -179,7 +179,7 @@ def compute_predictions_accuracy(predictions, labels):
     return (100 * num_correct_labels)/predictions.shape[0]
 
 
-def train_feed_forward_neural_network(training_dataset, validation_dataset, input_data_size, output_size):
+def train_feedforward_neural_network(training_dataset, validation_dataset, input_data_size, output_size):
     """
     Train the feed forward neural network using gradient descent by trying to minimize the loss.
     This function is used for cross validation.

@@ -11,6 +11,12 @@ num_validation_examples = num_classes * validation_examples_for_class
 
 
 def normalize_data(data_point):
+    """
+    Shift the input data in interval [0, 1]
+
+    :param data_point:
+    :return:
+    """
     min_element = min(data_point)
     max_element = max(data_point)
 
@@ -50,7 +56,10 @@ def create_one_hot_encoding(class_id):
 
 
 def create_training_dataset():
+    """
 
+    :return:
+    """
     training_dataset = dict()
 
     training_data = np.ndarray(shape=(num_training_examples, num_genes),
@@ -71,6 +80,10 @@ def create_training_dataset():
 
 
 def create_validation_dataset():
+    """
+
+    :return:
+    """
     validation_dataset = dict()
 
     validation_data = np.ndarray(shape=(num_validation_examples, num_genes),
