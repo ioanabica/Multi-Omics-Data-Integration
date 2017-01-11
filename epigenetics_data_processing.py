@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 # Set the gene entropy threshold for selecting the gene
-gene_entropy_threshold = 6.2
+gene_entropy_threshold = 6.3
 # Number of k folds
 k = 6
 

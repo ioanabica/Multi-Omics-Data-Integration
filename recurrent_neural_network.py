@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.python.ops import rnn, rnn_cell
 
 # Hyperparameters
-hidden_units = 16
+hidden_units = 32
 
 # Training parameters
 learning_rate = 0.05
@@ -38,23 +38,50 @@ def inference(input_data, sequence_size, weights, biases):
 
     # Modify input data shape for the recurrent neural network
     # Current data shape: (batch_size, input_data_size)
+    # Current data shape: (batch_size, input_data_size)
     # Required data shape: (input_data_size, batch_size)
 
-    input_data = tf.transpose(input_data)
+    input_data = tf.transpose(input_data, [1, 0, 2])
     input_data = tf.reshape(input_data, [-1, 1])
     input_data = tf.split(0, sequence_size, input_data)
-    print input_data
 
-    with tf.variable_scope("LSTM") as scope:
-        lstm_cell = rnn_cell.BasicLSTMCell(hidden_units, forget_bias=1.0)
-        scope.reuse_variables()
-
+    lstm_cell = rnn_cell.BasicLSTMCell(hidden_units, forget_bias=1.0)
     outputs, states = rnn.rnn(lstm_cell, input_data,  dtype=tf.float32)
 
     # output layer
     logits = tf.matmul(outputs[-1], weights['hidden_layer']) + biases['output_layer']
 
     return logits
+
+
+def validation_inference(input_data, sequence_size, weights, biases):
+    """
+    The recurrent neural network processes the epigenetics data as a sequence of gene expressions.
+
+    :param input_data:
+    :param weights:
+    :param biases:
+    :return:
+    """
+
+    # Modify input data shape for the recurrent neural network
+    # Current data shape: (batch_size, input_data_size)
+    # Current data shape: (batch_size, input_data_size)
+    # Required data shape: (input_data_size, batch_size)
+
+    input_data = tf.transpose(input_data, [1, 0, 2])
+    input_data = tf.reshape(input_data, [-1, 1])
+    input_data = tf.split(0, sequence_size, input_data)
+
+    lstm_cell = rnn_cell.BasicLSTMCell(hidden_units, forget_bias=1.0)
+    outputs, states = rnn.rnn(lstm_cell, input_data,  dtype=tf.float32)
+
+    # output layer
+    logits = tf.matmul(outputs[-1], weights['hidden_layer']) + biases['output_layer']
+
+    return logits
+
+
 
 
 def create_feed_dictionary(
@@ -114,27 +141,34 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, input_d
     training_data = training_dataset["training_data"]
     training_labels = training_dataset["training_labels"]
 
+    training_data = np.reshape(training_data, (len(training_data), input_data_size, 1))
+
     validation_data = validation_dataset["validation_data"]
     validation_labels = validation_dataset["validation_labels"]
+
+    validation_data = np.reshape(validation_data, (len(validation_data), input_data_size, 1))
 
     graph = tf.Graph()
     with graph.as_default():
 
         # create placeholders for input tensors
-        tf_input_data = tf.placeholder(tf.float32, shape=(None, input_data_size))
+        tf_input_data = tf.placeholder(tf.float32, shape=(None, input_data_size, 1))
         tf_input_labels = tf.placeholder(tf.float32, shape=(None, output_size))
 
         weights, biases = initialize_weights_and_biases(hidden_units, output_size)
 
-        logits = inference(tf_input_data, input_data_size, weights, biases)
+        with tf.variable_scope('inference'):
+            logits = inference(tf_input_data, input_data_size, weights, biases)
         training_loss = compute_loss(logits, tf_input_labels)
 
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
 
         training_predictions = tf.nn.softmax(logits)
-        validation_predictions = tf.nn.softmax(inference(validation_data, input_data_size, weights, biases))
+        with tf.variable_scope('inference') as scope:
+            scope.reuse_variables()
+            validation_predictions = tf.nn.softmax(validation_inference(validation_data, input_data_size, weights, biases))
 
-    steps = 3000
+    steps = 4000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases
@@ -146,6 +180,9 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, input_d
 
             # Create a training minibatch.
             minibatch_data = training_data[offset:(offset + batch_size), :]
+
+            minibatch_data = minibatch_data.reshape(batch_size, input_data_size, 1)
+
             minibatch_labels = training_labels[offset:(offset + batch_size), :]
 
             feed_dictionary = create_feed_dictionary(
@@ -155,13 +192,14 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, input_d
             _, loss, predictions = session.run(
                 [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
-            if (step % 500 == 0):
+            if (step % 300 == 0):
                 print('Minibatch loss at step %d: %f' % (step, loss))
                 print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
 
         validation_feed_dictionary = create_feed_dictionary(
             tf_input_data, tf_input_labels,
             validation_data, validation_labels)
+
         validation_accuracy = compute_predictions_accuracy(
                   validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
