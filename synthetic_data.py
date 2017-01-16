@@ -1,8 +1,9 @@
 import numpy as np
-from feedforward_neural_network import train_feed_forward_neural_network
+from feedforward_neural_network import train_feedforward_neural_network
+from recurrent_neural_network_using_BasicLSTMcell import train_recurrent_neural_network
 
 num_classes = 7
-num_genes = 500
+num_genes = 200
 training_examples_for_class = 10
 validation_examples_for_class = 3
 
@@ -108,7 +109,7 @@ class SyntheticData(object):
     training_dataset = create_training_dataset()
     validation_dataset = create_validation_dataset()
 
-    validation_accuracy = train_feed_forward_neural_network(training_dataset, validation_dataset, num_genes,
+    validation_accuracy = train_recurrent_neural_network(training_dataset, validation_dataset, num_genes,
                                                             num_classes)
 
 

@@ -2,7 +2,7 @@ import math
 import numpy as np
 
 # Set the gene entropy threshold for selecting the gene
-gene_entropy_threshold = 6.3
+gene_entropy_threshold = 6.37
 # Number of k folds
 k = 6
 
@@ -60,6 +60,7 @@ def extract_embryoStage_to_embryoIds(file):
     :param file:
     :return:
     """
+
     embryoStage_to_embryoIds = dict()
     file.readline()
     for line in file:
@@ -71,20 +72,25 @@ def extract_embryoStage_to_embryoIds(file):
     return embryoStage_to_embryoIds
 
 
-def extract_geneId_to_geneEntorpy(file):
+def extract_geneId_to_geneEntorpy_to_expressionProfile(file):
     """
 
     :param file:
     :return:
     """
     geneId_to_geneEntropy = dict()
+    geneId_to_expressionProfile = dict()
+
     file.readline()
     for line in file:
         line_elements = line.split()
         gene_entropy = compute_gene_entropy(compute_probability_distribution(line_elements[1:]))
         geneId_to_geneEntropy[line_elements[0]] = gene_entropy
 
-    return geneId_to_geneEntropy
+        if gene_entropy > gene_entropy_threshold:
+            geneId_to_expressionProfile[line_elements[0]] = line_elements[1:]
+
+    return geneId_to_geneEntropy, geneId_to_expressionProfile
 
 def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
     """
@@ -321,10 +327,6 @@ def create_k_fold_datasets(
             if index_j != index_i:
                 training_embryoIds += k_fold_embryoIds[index_j]
 
-        print index_i
-        print validation_embryoIds
-        print training_embryoIds
-
         training_dataset = create_training_dataset(
             training_embryoIds,
             input_data_size,
@@ -359,7 +361,7 @@ class EpigeneticsData(object):
     embryo_stage_file.seek(0)
     embryoStage_to_embryoIds = extract_embryoStage_to_embryoIds(embryo_stage_file)
 
-    geneId_to_geneEntropy = extract_geneId_to_geneEntorpy(gene_expressions_file)
+    geneId_to_geneEntropy, geneId_to_expressionProfile = extract_geneId_to_geneEntorpy_to_expressionProfile(gene_expressions_file)
     gene_expressions_file.seek(0)
     embryoId_to_geneExpressions = extract_embryoId_to_geneExpressions(gene_expressions_file, geneId_to_geneEntropy)
 
@@ -378,9 +380,6 @@ class EpigeneticsData(object):
 
 
     training_embryoIds += test_embryoIds
-
-    print training_embryoIds
-    print validation_embryoIds
 
     training_dataset = create_training_dataset(
         training_embryoIds,
