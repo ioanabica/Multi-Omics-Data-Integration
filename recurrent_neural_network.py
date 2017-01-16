@@ -3,12 +3,13 @@ import numpy as np
 import tensorflow as tf
 
 # Hyperparameters
-num_units = 8
-hidden_units_1 = 16
-keep_probability = 0.75
+input_size = 16
+num_units = 128
+hidden_units_1 = 64
+keep_probability = 0.25
 
 # Training parameters
-learning_rate = 0.05
+learning_rate = 0.01
 batch_size = 16
 epsilon = 1e-3
 
@@ -56,7 +57,7 @@ def initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_
     weights['LSTM_memory_cell_cW'] = memory_cell_cW
     weights['LSTM_memory_cell_pW'] = memory_cell_pW
 
-    memory_cell_biases = tf.Variable(tf.truncated_normal([num_units], -0.1, 0.1))
+    memory_cell_biases = tf.Variable(tf.zeros(num_units))
     biases['LSTM_memory_cell_biases'] = memory_cell_biases
 
     # Output gate
@@ -132,7 +133,7 @@ def lstm(input_data, previous_hidden_state, previous_cell_state, weights, biases
     return new_hidden_state, new_cell_state
 
 
-def inference(input_data, sequence_size, weights, biases, batch_size, keep_probability):
+def inference(input_data, sequence_length, weights, biases, batch_size, keep_probability):
     """
     The recurrent neural network processes the epigenetics data as a sequence of gene expressions.
 
@@ -143,12 +144,12 @@ def inference(input_data, sequence_size, weights, biases, batch_size, keep_proba
     """
 
     # Modify input data shape for the recurrent neural network
-    # Current data shape: (batch_size, input_data_size, 1)
-    # Required data shape: (input_data_size, batch_size, 1)
+    # Current data shape: (batch_size, sequence_length, input_size)
+    # Required data shape: (sequence_length, batch_size, input_size)
 
     input_data = tf.transpose(input_data, [1, 0, 2])
-    input_data = tf.reshape(input_data, [-1, 1])
-    input_data = tf.split(0, sequence_size, input_data)
+    input_data = tf.reshape(input_data, [-1, input_size])
+    input_data = tf.split(0, sequence_length/input_size, input_data)
 
     outputs = list()
     output = tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
@@ -156,10 +157,10 @@ def inference(input_data, sequence_size, weights, biases, batch_size, keep_proba
 
     for current_input in input_data:
         output, cell_state = lstm(current_input, output, cell_state, weights, biases)
-        output = tf.nn.dropout(output, keep_probability)
+        #output = tf.nn.dropout(output, keep_probability)
 
-        mean, variance = tf.nn.moments(output, [0])
-        output = tf.nn.batch_normalization(output, mean, variance, None, None, epsilon)
+        #mean, variance = tf.nn.moments(output, [0])
+        #output = tf.nn.batch_normalization(output, mean, variance, None, None, epsilon)
 
         outputs.append(output)
 
@@ -244,25 +245,25 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
     training_data = training_dataset["training_data"]
     training_labels = training_dataset["training_labels"]
 
-    training_data = np.reshape(training_data, (len(training_data), sequence_length, 1))
+    training_data = np.reshape(training_data, (len(training_data), sequence_length/input_size, input_size))
 
     validation_data = validation_dataset["validation_data"]
     validation_labels = validation_dataset["validation_labels"]
 
-    validation_data = np.reshape(validation_data, (len(validation_data), sequence_length, 1))
+    validation_data = np.reshape(validation_data, (len(validation_data), sequence_length/input_size, input_size))
 
     graph = tf.Graph()
     with graph.as_default():
 
         # create placeholders for input tensors
-        tf_input_data = tf.placeholder(tf.float32, shape=(None, sequence_length, 1))
+        tf_input_data = tf.placeholder(tf.float32, shape=(None, sequence_length/input_size, input_size))
         tf_input_labels = tf.placeholder(tf.float32, shape=(None, output_size))
 
         # create placeholder for the keep probability
         # dropout is used during training, but not during testing
         tf_keep_probability = tf.placeholder(tf.float32)
 
-        weights, biases = initialize_weights_and_biases(1, num_units, hidden_units_1, output_size)
+        weights, biases = initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_size)
 
         logits = inference(tf_input_data, sequence_length, weights, biases, batch_size, tf_keep_probability)
         training_loss = compute_loss(logits, tf_input_labels)
@@ -288,7 +289,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
 
             # Create a training minibatch.
             minibatch_data = training_data[offset:(offset + batch_size), :]
-            minibatch_data = minibatch_data.reshape(batch_size, sequence_length, 1)
+            minibatch_data = minibatch_data.reshape(batch_size, sequence_length/input_size, input_size)
 
             minibatch_labels = training_labels[offset:(offset + batch_size), :]
 

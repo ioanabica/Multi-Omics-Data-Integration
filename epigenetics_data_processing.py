@@ -2,7 +2,8 @@ import math
 import numpy as np
 
 # Set the gene entropy threshold for selecting the gene
-gene_entropy_threshold = 6.3
+gene_entropy_threshold = 6.2
+max_num_genes = 512
 # Number of k folds
 k = 6
 
@@ -108,12 +109,15 @@ def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
     for embryoId in embryoIds:
         embryoId_to_geneExpressions[embryoId] = []
 
+    num_genes = 0
     for line in file:
         line_elements = line.split()
-        if (geneId_to_geneEntropy[line_elements[0]] > gene_entropy_threshold) & \
+        if (geneId_to_geneEntropy[line_elements[0]] > gene_entropy_threshold) & (num_genes < max_num_genes) & \
                 (len(line_elements) == len(embryoIds) + 1):
+            num_genes += 1
             for index in range(len(embryoIds)):
                 embryoId_to_geneExpressions[embryoIds[index]] += [line_elements[index+1]]
+
 
     print len(embryoId_to_geneExpressions['GSM896803'])
     return embryoId_to_geneExpressions
