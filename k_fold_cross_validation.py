@@ -1,7 +1,7 @@
 import numpy
 from epigenetics_data_processing import EpigeneticsData
 from feedforward_neural_network import train_feedforward_neural_network
-from recurrent_neural_network_using_BasicLSTMcell import train_recurrent_neural_network
+from recurrent_neural_network import train_recurrent_neural_network
 
 epigeneticsData = EpigeneticsData()
 k_fold_datasets = epigeneticsData.k_fold_datasets
