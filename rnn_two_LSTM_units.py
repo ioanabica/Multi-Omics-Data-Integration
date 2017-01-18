@@ -4,9 +4,15 @@ import tensorflow as tf
 
 # Hyperparameters
 input_size = 1
-num_units = 32
-hidden_units_1 = 16
-keep_probability = 0.5
+num_units_1 = 16
+num_units_2 = 64
+
+hidden_units_1 = 128
+hidden_units_2 = 64
+hidden_units_3 = 32
+hidden_units_4 = 12
+
+keep_probability = 0.75
 
 # Training parameters
 learning_rate = 0.05
@@ -14,16 +20,7 @@ batch_size = 16
 epsilon = 1e-3
 
 
-def initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_size):
-    """
-    Use Glorot initialization of the weights
-
-    :param input_size:
-    :param num_units:
-    :param output_size:
-    :return:
-    """
-
+def initializa_weights_and_biases_for_LSTM_cell(input_size, num_units):
     weights = dict()
     biases = dict()
 
@@ -79,15 +76,39 @@ def initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_
     output_biases = tf.Variable(tf.zeros(num_units))
     biases['LSTM_output_biases'] = output_biases
 
+    return weights, biases
+
+
+def initialize_output_and_cell_state_for_LSTM(batch_size, num_units):
+
+    output= tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
+    cell_state = tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
+
+    return output, cell_state
+
+
+def initialize_weights_and_biases_for_MLP(
+        input_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size):
+
     """
     Feed forward neural network layer used after the LSTM Units. The input to the feed forward neural netowork is
-    the mean value of the outputs of the LSTM cell
+    the mean value of the last output of the LSTM cell
+
+    Use Glorot initialization of the weights
+
+    :param input_size:
+    :param num_units:
+    :param output_size:
+    :return:
     """
+
+    weights = dict()
+    biases = dict()
 
     # weights for the input layer
     weights_input_layer = tf.Variable(
-        tf.truncated_normal([num_units, hidden_units_1],
-                            stddev=math.sqrt(2.0 / float(num_units + hidden_units_1))))
+        tf.truncated_normal([input_size, hidden_units_1],
+                            stddev=math.sqrt(2.0 / float(input_size + hidden_units_1))))
     weights['MLP_input_layer'] = weights_input_layer
 
     # biases for the first hidden layer
@@ -96,10 +117,38 @@ def initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_
 
     # weights for first hidden layer
     weights_first_hidden_layer = tf.Variable(
-        tf.truncated_normal([hidden_units_1, output_size],
-                            stddev=math.sqrt(2.0 / float(hidden_units_1 + output_size))))
-
+        tf.truncated_normal([hidden_units_1, hidden_units_2],
+                            stddev=math.sqrt(2.0 / float(hidden_units_1 + hidden_units_2))))
     weights['MLP_first_hidden_layer'] = weights_first_hidden_layer
+
+    # biases for the second hidden layer
+    biases_second_hidden_layer = tf.Variable(tf.zeros(hidden_units_2))
+    biases['MLP_second_hidden_layer'] = biases_second_hidden_layer
+
+    # weights for the second hidden layer
+    weights_second_hidden_layer = tf.Variable(
+        tf.truncated_normal([hidden_units_2, hidden_units_3],
+                            stddev=math.sqrt(2.0 / float(hidden_units_2 + hidden_units_3))))
+    weights['MLP_second_hidden_layer'] = weights_second_hidden_layer
+
+    # biases for third hidden layer
+    biases_third_hidden_layer = tf.Variable(tf.zeros(hidden_units_3))
+    biases['MLP_third_hidden_layer'] = biases_third_hidden_layer
+
+    # weights for third hidden layer
+    weights_third_hidden_layer = tf.Variable(
+        tf.truncated_normal([hidden_units_3, hidden_units_4],
+                            stddev=math.sqrt(2.0 / float(hidden_units_3 + hidden_units_4))))
+    weights['MLP_third_hidden_layer'] = weights_third_hidden_layer
+
+    # biases for forth layer
+    biases_forth_hidden_layer = tf.Variable(tf.zeros(hidden_units_4))
+    biases['MLP_forth_hidden_layer'] = biases_forth_hidden_layer
+
+    # weights for forth layer
+    weights_forth_hidden_layer = tf.Variable(
+        tf.truncated_normal([hidden_units_4, output_size], stddev=math.sqrt(2.0 / float(hidden_units_4 + output_size))))
+    weights['MLP_forth_hidden_layer'] = weights_forth_hidden_layer
 
     # biases for output layer
     biases_output_layer = tf.Variable(tf.zeros(output_size))
@@ -112,7 +161,7 @@ def lstm(input_data, previous_hidden_state, previous_cell_state, weights, biases
     """
 
     :param input_data:
-    :param previous_hidden_state:
+    :param previous_hidden_state: previous output of the LSTM cell
     :param previous_cell_state:
     :param weights:
     :param biases:
@@ -141,7 +190,50 @@ def lstm(input_data, previous_hidden_state, previous_cell_state, weights, biases
     return new_hidden_state, new_cell_state
 
 
-def inference(input_data, sequence_length, weights, biases, batch_size, keep_probability):
+def MLP_inference(input_data, weights, biases, keep_probability):
+
+    # first hidden layer
+    input_to_first_hidden_layer = \
+        tf.matmul(input_data, weights['MLP_input_layer']) + biases['MLP_first_hidden_layer']
+    mean, variance = tf.nn.moments(input_to_first_hidden_layer, [0])
+
+    first_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_first_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
+
+    # second hidden layer
+    input_to_second_hidden_layer = \
+        tf.matmul(first_hidden_layer, weights['MLP_first_hidden_layer']) + biases['MLP_second_hidden_layer']
+    mean, variance = tf.nn.moments(input_to_second_hidden_layer, [0])
+
+    second_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_second_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
+
+    # third hidden layer
+    input_to_third_hidden_layer = \
+        tf.matmul(second_hidden_layer, weights['MLP_second_hidden_layer']) + biases['MLP_third_hidden_layer']
+    mean, variance = tf.nn.moments(input_to_third_hidden_layer, [0])
+    third_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_third_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
+
+    # forth_hidden_layer
+    input_to_forth_hidden_layer = \
+        tf.matmul(third_hidden_layer, weights['MLP_third_hidden_layer']) + biases['MLP_forth_hidden_layer']
+    mean, variance = tf.nn.moments(input_to_forth_hidden_layer, [0])
+
+    forth_hidden_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_forth_hidden_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
+
+    # output layer
+    logits = tf.matmul(forth_hidden_layer, weights['MLP_forth_hidden_layer']) + biases['MLP_output_layer']
+
+    return logits
+
+
+def inference(input_data, sequence_length, weights, biases, outputs, cell_states, keep_probability):
     """
     The recurrent neural network processes the epigenetics data as a sequence of gene expressions.
 
@@ -159,35 +251,38 @@ def inference(input_data, sequence_length, weights, biases, batch_size, keep_pro
     input_data = tf.reshape(input_data, [-1, input_size])
     input_data = tf.split(0, sequence_length/input_size, input_data)
 
-    print(input_data)
-    outputs = list()
-    output = tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
-    cell_state = tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
+    RNN_outputs = list()
+    LSTM_1_output = outputs['LSTM_1']
+    LSTM_1_cell_state = cell_states['LSTM_1']
+
+    LSTM_2_output = outputs['LSTM_2']
+    LSTM_2_cell_state = cell_states['LSTM_2']
 
     for current_input in input_data:
-        output, cell_state = lstm(current_input, output, cell_state, weights, biases)
-        output = tf.nn.dropout(output, keep_probability)
+        LSTM_1_output, LSTM_1_cell_state = \
+            lstm(current_input, LSTM_1_output, LSTM_1_cell_state, weights['LSMT_1'], biases['LSTM_1'])
+        LSTM_1_output = tf.nn.dropout(LSTM_1_output, keep_probability)
 
-        mean, variance = tf.nn.moments(output, [0])
-        output = tf.nn.batch_normalization(output, mean, variance, None, None, epsilon)
+        mean, variance = tf.nn.moments(LSTM_1_output, [0])
+        LSTM_1_output = tf.nn.batch_normalization(LSTM_1_output, mean, variance, None, None, epsilon)
 
-        outputs.append(output)
+        LSTM_2_output, LSTM_2_cell_state = \
+            lstm(LSTM_1_output, LSTM_2_output, LSTM_2_cell_state, weights['LSMT_2'], biases['LSTM_2'])
 
-    MLP_input = outputs[-1]
+        LSTM_2_output = tf.nn.dropout(LSTM_2_output, keep_probability)
+
+        mean, variance = tf.nn.moments(LSTM_2_output, [0])
+        LSTM_2_output = tf.nn.batch_normalization(LSTM_2_output, mean, variance, None, None, epsilon)
+
+        RNN_outputs.append(LSTM_2_output)
+
+    MLP_input = RNN_outputs[-1]
 
     mean, variance = tf.nn.moments(MLP_input, [0])
     MLP_input = tf.nn.batch_normalization(MLP_input, mean, variance, None, None, epsilon)
 
-    input_to_first_hidden_layer = \
-        tf.matmul(MLP_input, weights['MLP_input_layer']) + biases['MLP_first_hidden_layer']
-    mean, variance = tf.nn.moments(input_to_first_hidden_layer, [0])
-
-    first_hidden_layer = tf.nn.dropout(tf.nn.relu(
-        tf.nn.batch_normalization(input_to_first_hidden_layer, mean, variance, None, None, epsilon)),
-        keep_probability)
-
-    # output layer
-    logits = tf.matmul(first_hidden_layer, weights['MLP_first_hidden_layer']) + biases['MLP_output_layer']
+    # Multilayer perceptron network
+    logits = MLP_inference(MLP_input, weights['MLP'], biases['MLP'], keep_probability)
 
     return logits
 
@@ -272,18 +367,52 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
         # dropout is used during training, but not during testing
         tf_keep_probability = tf.placeholder(tf.float32)
 
-        weights, biases = initialize_weights_and_biases(input_size, num_units, hidden_units_1, output_size)
+        # initialize weights and biases for the LSTM cell and MLP network
+        weights = dict()
+        biases = dict()
+        weights['LSMT_1'], biases['LSTM_1'] = initializa_weights_and_biases_for_LSTM_cell(input_size, num_units_1)
+        weights['LSMT_2'], biases['LSTM_2'] = initializa_weights_and_biases_for_LSTM_cell(num_units_1, num_units_2)
+        weights['MLP'], biases['MLP'] = initialize_weights_and_biases_for_MLP(
+            num_units_2, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size)
 
-        logits = inference(tf_input_data, sequence_length, weights, biases, batch_size, tf_keep_probability)
+        # initialize the output and cell_state for the LSTM cells for training
+        initial_LSMT_outputs = dict()
+        initial_LSMT_cell_states = dict()
+
+        initial_LSMT_outputs['LSTM_1'], initial_LSMT_cell_states['LSTM_1'] = \
+            initialize_output_and_cell_state_for_LSTM(batch_size, num_units_1)
+        initial_LSMT_outputs['LSTM_2'], initial_LSMT_cell_states['LSTM_2'] = \
+            initialize_output_and_cell_state_for_LSTM(batch_size, num_units_2)
+
+        # use the model to perform inference
+        logits = inference(
+            tf_input_data, sequence_length,
+            weights, biases,
+            initial_LSMT_outputs, initial_LSMT_cell_states,
+            tf_keep_probability)
+
         training_loss = compute_loss(logits, tf_input_labels)
 
-        optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(training_loss)
+        # TODO: describe how the AdamOptimizer works
+        optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
 
         print("Training RNN")
         training_predictions = tf.nn.softmax(logits)
 
+        # initialize the output and cell_state for the LSTM cells for validation
+        initial_LSMT_outputs = dict()
+        initial_LSMT_cell_states = dict()
+
+        initial_LSMT_outputs['LSTM_1'], initial_LSMT_cell_states['LSTM_1'] = \
+            initialize_output_and_cell_state_for_LSTM(len(validation_data), num_units_1)
+        initial_LSMT_outputs['LSTM_2'], initial_LSMT_cell_states['LSTM_2'] = \
+            initialize_output_and_cell_state_for_LSTM(len(validation_data), num_units_2)
+
         validation_logits = inference(
-            validation_data, sequence_length, weights, biases, len(validation_data), tf_keep_probability)
+            validation_data, sequence_length,
+            weights, biases,
+            initial_LSMT_outputs, initial_LSMT_cell_states,
+            tf_keep_probability)
         validation_predictions = tf.nn.softmax(validation_logits)
 
     steps = 3000

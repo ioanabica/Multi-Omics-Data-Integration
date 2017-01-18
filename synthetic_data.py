@@ -1,9 +1,9 @@
 import numpy as np
 from feedforward_neural_network import train_feedforward_neural_network
-from recurrent_neural_network_using_BasicLSTMcell import train_recurrent_neural_network
+from recurrent_neural_network import train_recurrent_neural_network
 
 num_classes = 7
-num_genes = 200
+num_genes = 256
 training_examples_for_class = 10
 validation_examples_for_class = 3
 
