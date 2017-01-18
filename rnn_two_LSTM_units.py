@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 # Hyperparameters
-input_size = 1
+input_size = 4
 num_units_1 = 16
 num_units_2 = 64
 
@@ -12,10 +12,12 @@ hidden_units_2 = 64
 hidden_units_3 = 32
 hidden_units_4 = 12
 
-keep_probability = 0.75
+keep_probability = 0.5
 
 # Training parameters
-learning_rate = 0.05
+learning_rate = 0.0002
+weight_decay = 0.05
+
 batch_size = 16
 epsilon = 1e-3
 
@@ -79,12 +81,18 @@ def initializa_weights_and_biases_for_LSTM_cell(input_size, num_units):
     return weights, biases
 
 
-def initialize_output_and_cell_state_for_LSTM(batch_size, num_units):
+def initialize_outputs_and_cell_states_for_LSTMs(batch_size, num_units_1, num_units_2):
 
-    output= tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
-    cell_state = tf.Variable(tf.zeros([batch_size, num_units]), trainable=False)
+    initial_LSTM_outputs = dict()
+    initial_LSTM_cell_states = dict()
 
-    return output, cell_state
+    initial_LSTM_outputs['LSTM_1'] = tf.Variable(tf.zeros([batch_size, num_units_1]), trainable=False)
+    initial_LSTM_cell_states['LSTM_1'] = tf.Variable(tf.zeros([batch_size, num_units_1]), trainable=False)
+
+    initial_LSTM_outputs['LSTM_2'] = tf.Variable(tf.zeros([batch_size, num_units_2]), trainable=False)
+    initial_LSTM_cell_states['LSTM_2'] = tf.Variable(tf.zeros([batch_size, num_units_2]), trainable=False)
+
+    return initial_LSTM_outputs, initial_LSTM_cell_states
 
 
 def initialize_weights_and_biases_for_MLP(
@@ -108,7 +116,7 @@ def initialize_weights_and_biases_for_MLP(
     # weights for the input layer
     weights_input_layer = tf.Variable(
         tf.truncated_normal([input_size, hidden_units_1],
-                            stddev=math.sqrt(2.0 / float(input_size + hidden_units_1))))
+                            stddev=math.sqrt(2.0 / float(input_size))))
     weights['MLP_input_layer'] = weights_input_layer
 
     # biases for the first hidden layer
@@ -118,7 +126,7 @@ def initialize_weights_and_biases_for_MLP(
     # weights for first hidden layer
     weights_first_hidden_layer = tf.Variable(
         tf.truncated_normal([hidden_units_1, hidden_units_2],
-                            stddev=math.sqrt(2.0 / float(hidden_units_1 + hidden_units_2))))
+                            stddev=math.sqrt(2.0 / float(hidden_units_1))))
     weights['MLP_first_hidden_layer'] = weights_first_hidden_layer
 
     # biases for the second hidden layer
@@ -128,7 +136,7 @@ def initialize_weights_and_biases_for_MLP(
     # weights for the second hidden layer
     weights_second_hidden_layer = tf.Variable(
         tf.truncated_normal([hidden_units_2, hidden_units_3],
-                            stddev=math.sqrt(2.0 / float(hidden_units_2 + hidden_units_3))))
+                            stddev=math.sqrt(2.0 / float(hidden_units_2))))
     weights['MLP_second_hidden_layer'] = weights_second_hidden_layer
 
     # biases for third hidden layer
@@ -138,7 +146,7 @@ def initialize_weights_and_biases_for_MLP(
     # weights for third hidden layer
     weights_third_hidden_layer = tf.Variable(
         tf.truncated_normal([hidden_units_3, hidden_units_4],
-                            stddev=math.sqrt(2.0 / float(hidden_units_3 + hidden_units_4))))
+                            stddev=math.sqrt(2.0 / float(hidden_units_3))))
     weights['MLP_third_hidden_layer'] = weights_third_hidden_layer
 
     # biases for forth layer
@@ -147,7 +155,7 @@ def initialize_weights_and_biases_for_MLP(
 
     # weights for forth layer
     weights_forth_hidden_layer = tf.Variable(
-        tf.truncated_normal([hidden_units_4, output_size], stddev=math.sqrt(2.0 / float(hidden_units_4 + output_size))))
+        tf.truncated_normal([hidden_units_4, output_size], stddev=math.sqrt(2.0 / float(hidden_units_4))))
     weights['MLP_forth_hidden_layer'] = weights_forth_hidden_layer
 
     # biases for output layer
@@ -308,14 +316,20 @@ def create_feed_dictionary(
 
 
 
-def compute_loss(logits, labels):
+def compute_loss(logits, labels, weights):
     """
     :param logits:
     :param labels:
     :return:
     """
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
-    loss = tf.reduce_mean(cross_entropy)
+    L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
+              tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer']) + \
+              tf.nn.l2_loss(weights['MLP']['MLP_second_hidden_layer']) + \
+              tf.nn.l2_loss(weights['MLP']['MLP_third_hidden_layer']) + \
+              tf.nn.l2_loss(weights['MLP']['MLP_forth_hidden_layer'])
+
+    loss = tf.reduce_mean(cross_entropy + weight_decay * L2_loss)
 
     return loss
 
@@ -376,13 +390,8 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
             num_units_2, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size)
 
         # initialize the output and cell_state for the LSTM cells for training
-        initial_LSMT_outputs = dict()
-        initial_LSMT_cell_states = dict()
-
-        initial_LSMT_outputs['LSTM_1'], initial_LSMT_cell_states['LSTM_1'] = \
-            initialize_output_and_cell_state_for_LSTM(batch_size, num_units_1)
-        initial_LSMT_outputs['LSTM_2'], initial_LSMT_cell_states['LSTM_2'] = \
-            initialize_output_and_cell_state_for_LSTM(batch_size, num_units_2)
+        initial_LSMT_outputs, initial_LSMT_cell_states = \
+            initialize_outputs_and_cell_states_for_LSTMs(batch_size, num_units_1, num_units_2)
 
         # use the model to perform inference
         logits = inference(
@@ -391,7 +400,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
             initial_LSMT_outputs, initial_LSMT_cell_states,
             tf_keep_probability)
 
-        training_loss = compute_loss(logits, tf_input_labels)
+        training_loss = compute_loss(logits, tf_input_labels, weights)
 
         # TODO: describe how the AdamOptimizer works
         optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
@@ -400,22 +409,18 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
         training_predictions = tf.nn.softmax(logits)
 
         # initialize the output and cell_state for the LSTM cells for validation
-        initial_LSMT_outputs = dict()
-        initial_LSMT_cell_states = dict()
-
-        initial_LSMT_outputs['LSTM_1'], initial_LSMT_cell_states['LSTM_1'] = \
-            initialize_output_and_cell_state_for_LSTM(len(validation_data), num_units_1)
-        initial_LSMT_outputs['LSTM_2'], initial_LSMT_cell_states['LSTM_2'] = \
-            initialize_output_and_cell_state_for_LSTM(len(validation_data), num_units_2)
+        initial_LSMT_outputs, initial_LSMT_cell_states = \
+            initialize_outputs_and_cell_states_for_LSTMs(len(validation_data), num_units_1, num_units_2)
 
         validation_logits = inference(
             validation_data, sequence_length,
             weights, biases,
             initial_LSMT_outputs, initial_LSMT_cell_states,
             tf_keep_probability)
+
         validation_predictions = tf.nn.softmax(validation_logits)
 
-    steps = 3000
+    steps = 40000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases
@@ -439,6 +444,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
                 [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
             if (step % 500 == 0):
+                print("Learning rate %f" % learning_rate)
                 print('Minibatch loss at step %d: %f' % (step, loss))
                 print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
 

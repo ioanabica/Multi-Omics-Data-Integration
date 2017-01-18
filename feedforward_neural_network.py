@@ -12,6 +12,7 @@ epsilon = 1e-3
 
 # Training parameters
 learning_rate = 0.05
+weight_decay = 0.01
 batch_size = 16
 
 
@@ -153,14 +154,20 @@ def create_feed_dictionary(
     return feed_dictionary
 
 
-def compute_loss(logits, labels):
+def compute_loss(logits, labels, weights):
     """
     :param logits:
     :param labels:
     :return:
     """
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
-    loss = tf.reduce_mean(cross_entropy)
+    L2_loss = tf.nn.l2_loss(weights['weights_input_layer']) + \
+              tf.nn.l2_loss(weights['weights_first_hidden_layer']) + \
+              tf.nn.l2_loss(weights['weights_second_hidden_layer']) + \
+              tf.nn.l2_loss(weights['weights_third_hidden_layer']) + \
+              tf.nn.l2_loss(weights['weights_forth_hidden_layer'])
+
+    loss = tf.reduce_mean(cross_entropy + L2_loss * weight_decay)
 
     return loss
 
@@ -217,7 +224,7 @@ def train_feedforward_neural_network(training_dataset, validation_dataset, input
             output_size)
 
         logits = inference(tf_input_data, weights, biases, tf_keep_probability)
-        training_loss = compute_loss(logits, tf_input_labels)
+        training_loss = compute_loss(logits, tf_input_labels, weights)
 
         optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 

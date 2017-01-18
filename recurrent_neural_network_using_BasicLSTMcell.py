@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.python.ops import rnn, rnn_cell
 
 # Hyperparameters
-hidden_units = 32
+hidden_units = 16
 
 # Training parameters
 learning_rate = 0.05
@@ -46,41 +46,13 @@ def inference(input_data, sequence_size, weights, biases):
     input_data = tf.split(0, sequence_size, input_data)
 
     lstm_cell = rnn_cell.BasicLSTMCell(hidden_units, forget_bias=1.0)
+    lstm_cell = rnn_cell.MultiRNNCell([lstm_cell] * 3)
     outputs, states = rnn.rnn(lstm_cell, input_data,  dtype=tf.float32)
 
     # output layer
     logits = tf.matmul(outputs[-1], weights['hidden_layer']) + biases['output_layer']
 
     return logits
-
-
-def validation_inference(input_data, sequence_size, weights, biases):
-    """
-    The recurrent neural network processes the epigenetics data as a sequence of gene expressions.
-
-    :param input_data:
-    :param weights:
-    :param biases:
-    :return:
-    """
-
-    # Modify input data shape for the recurrent neural network
-    # Current data shape: (batch_size, input_data_size)
-    # Current data shape: (batch_size, input_data_size)
-    # Required data shape: (input_data_size, batch_size)
-
-    input_data = tf.transpose(input_data, [1, 0, 2])
-    input_data = tf.reshape(input_data, [-1, 1])
-    input_data = tf.split(0, sequence_size, input_data)
-
-    lstm_cell = rnn_cell.BasicLSTMCell(hidden_units, forget_bias=1.0)
-    outputs, states = rnn.rnn(lstm_cell, input_data,  dtype=tf.float32)
-
-    # output layer
-    logits = tf.matmul(outputs[-1], weights['hidden_layer']) + biases['output_layer']
-
-    return logits
-
 
 
 
@@ -166,9 +138,9 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, input_d
         training_predictions = tf.nn.softmax(logits)
         with tf.variable_scope('inference') as scope:
             scope.reuse_variables()
-            validation_predictions = tf.nn.softmax(validation_inference(validation_data, input_data_size, weights, biases))
+            validation_predictions = tf.nn.softmax(inference(validation_data, input_data_size, weights, biases))
 
-    steps = 4000
+    steps = 3000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases
@@ -192,7 +164,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, input_d
             _, loss, predictions = session.run(
                 [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
-            if (step % 300 == 0):
+            if (step % 500 == 0):
                 print('Minibatch loss at step %d: %f' % (step, loss))
                 print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
 
