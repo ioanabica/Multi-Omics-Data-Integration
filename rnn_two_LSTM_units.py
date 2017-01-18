@@ -4,21 +4,21 @@ import tensorflow as tf
 
 # Hyperparameters
 input_size = 4
-num_units_1 = 16
-num_units_2 = 64
+num_units_1 = 64
+num_units_2 = 256
 
-hidden_units_1 = 128
-hidden_units_2 = 64
-hidden_units_3 = 32
-hidden_units_4 = 12
+hidden_units_1 = 512
+hidden_units_2 = 256
+hidden_units_3 = 64
+hidden_units_4 = 32
 
 keep_probability = 0.5
 
 # Training parameters
-learning_rate = 0.0002
-weight_decay = 0.05
+learning_rate = 0.0005
+weight_decay = 0.005
 
-batch_size = 16
+batch_size = 64
 epsilon = 1e-3
 
 
@@ -406,6 +406,8 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
         optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
 
         print("Training RNN")
+        print(learning_rate)
+        print(weight_decay)
         training_predictions = tf.nn.softmax(logits)
 
         # initialize the output and cell_state for the LSTM cells for validation
@@ -444,7 +446,6 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
                 [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
             if (step % 500 == 0):
-                print("Learning rate %f" % learning_rate)
                 print('Minibatch loss at step %d: %f' % (step, loss))
                 print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
 
