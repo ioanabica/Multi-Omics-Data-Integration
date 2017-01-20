@@ -2,8 +2,8 @@ import math
 import numpy as np
 
 # Set the gene entropy threshold for selecting the gene
-gene_entropy_threshold = 6.2
-max_num_genes = 256
+gene_entropy_threshold = 6.0
+max_num_genes = 512
 # Number of k folds
 k = 6
 
@@ -83,12 +83,14 @@ def extract_geneId_to_geneEntorpy_to_expressionProfile(file):
     geneId_to_expressionProfile = dict()
 
     file.readline()
+    num_genes = 0
     for line in file:
         line_elements = line.split()
         gene_entropy = compute_gene_entropy(compute_probability_distribution(line_elements[1:]))
         geneId_to_geneEntropy[line_elements[0]] = gene_entropy
 
-        if gene_entropy > gene_entropy_threshold:
+        if (gene_entropy > gene_entropy_threshold) & (num_genes < max_num_genes):
+            num_genes += 1
             geneId_to_expressionProfile[line_elements[0]] = line_elements[1:]
 
     return geneId_to_geneEntropy, geneId_to_expressionProfile
