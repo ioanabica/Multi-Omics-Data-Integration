@@ -41,17 +41,28 @@ def hierarchical_clustering(geneId_to_expressionProfile, min_num_clusters):
     while(num_clusters > min_num_clusters):
         min_index, max_index = find_closest_clusters(distance_matrix)
 
+
+        # update distance matrix
+        min_cluster_size = len(clusters[min_index])
+        max_cluster_size = len(clusters[max_index])
+
+        for index_i in range(num_clusters):
+            #distance_matrix[min_index][index_i] = \
+                #(distance_matrix[min_index][index_i] + distance_matrix[max_index][index_i])/2
+
+            # average (UPGMA)
+            distance_matrix[min_index][index_i] = \
+                ((distance_matrix[min_index][index_i] * min_cluster_size) +
+                 (distance_matrix[max_index][index_i] * max_cluster_size))/(min_cluster_size + max_cluster_size)
+
+            distance_matrix[index_i][min_index] = distance_matrix[min_index][index_i]
+
+        distance_matrix = np.delete(distance_matrix, max_index, 0)
+        distance_matrix = np.delete(distance_matrix, max_index, 1)
+
         # combine clusters
         clusters[min_index] += clusters[max_index]
         del clusters[max_index]
-
-        # update distance matrix
-        for index_i in range(num_clusters):
-            distance_matrix[min_index][index_i] = \
-                (distance_matrix[min_index][index_i] + distance_matrix[max_index][index_i])/2
-            distance_matrix[index_i][min_index] = distance_matrix[min_index][index_i]
-        distance_matrix = np.delete(distance_matrix, max_index, 0)
-        distance_matrix = np.delete(distance_matrix, max_index, 1)
 
         num_clusters -= 1
 
