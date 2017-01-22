@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from epigenetics_data_processing import EpigeneticsData
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import linkage,dendrogram
 
@@ -66,14 +65,14 @@ def hierarchical_clustering(geneId_to_expressionProfile, min_num_clusters):
 
         num_clusters -= 1
 
-    geneId_to_cluster = dict()
+    gene_id_to_cluster_id = dict()
     for index_i in range(num_clusters):
-        print(len(clusters[index_i]))
         for gene in clusters[index_i]:
-            geneId_to_cluster[gene] = index_i
+            gene_id_to_cluster_id[gene] = index_i
 
-    print clusters
-    print geneId_to_cluster
+    plot_dendogram(geneId_to_expressionProfile)
+
+    return gene_id_to_cluster_id, clusters
 
 
 def plot_dendogram(geneId_to_expressionProfile):
@@ -85,27 +84,13 @@ def plot_dendogram(geneId_to_expressionProfile):
     distance_matrix = pdist(geneExpressions, metric='correlation')
     dendrogram(linkage(distance_matrix, method='average'), labels=geneIds)
 
-
-geneId_to_expressionProfile = EpigeneticsData.geneId_to_expressionProfile
-
-geneExpressions = []
-
-geneIds = geneId_to_expressionProfile.keys()
-for geneId in geneIds:
-    geneExpressions += [geneId_to_expressionProfile[geneId]]
-
-
-data_dist = pdist(geneExpressions, metric='correlation')
-#print(squareform(data_dist))
-data_link = linkage(data_dist, method='weighted')
-dendrogram(data_link, labels=geneIds)
-
-hierarchical_clustering(geneId_to_expressionProfile, 3)
+    plt.ylabel("Distances")
+    plt.xlabel("Genes")
+    plt.show()
 
 
 
 
 
-plt.ylabel("Distances")
-plt.xlabel("Genes")
-plt.show()
+
+

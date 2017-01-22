@@ -1,20 +1,24 @@
 import math
 import numpy as np
+from gene_clustering import hierarchical_clustering
 
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.0
-max_num_genes = 512
+max_num_genes = 8
 # Number of k folds
 k = 6
 
 
 def compute_probability_distribution(gene_expressions):
     """
-    Normalize the gene expressions to obtain a probability distribution
+    Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
+    to the neural network architectures.
 
-    :param gene_expressions:
-    :return:
+    :param (list) gene_expressions :  The un-normalized gene expression profile for a training example
+    :return (list): normalized_gene_expressions: The normalized gene expression profile for a training
+             example
     """
+
     gene_expressions_sum = 0.0
     for gene_expression in gene_expressions:
         gene_expressions_sum += float(gene_expression)
@@ -27,9 +31,16 @@ def compute_probability_distribution(gene_expressions):
 
 def compute_gene_entropy(gene_expressions):
     """
+    Computes the entropy of the gene using the formula:
+            entropy = sum_i (- g_i * log(g_i))
+    where g_i is the expression level of the gene in experiment i
 
-    :param gene_expressions:
-    :return:
+    The entropy of the gene is useful in determining which genes change their values a lot over the stages of
+    embryonic development.
+
+    :param (list) gene_expressions: an array containing the gene expression profile
+    :return (float): gene_entropy: a float representing the entropy of the gene expression profile
+
     """
     gene_entropy = 0.0
     for gene_expression in gene_expressions:
@@ -39,90 +50,152 @@ def compute_gene_entropy(gene_expressions):
     return gene_entropy
 
 
-def extract_embryoId_to_embryoStage(file):
+def extract_embryo_id_to_embryo_stage(data_file):
     """
-    Create a dictionary from an embryoId to the corresponding development stage
+    Create a dictionary from an embryo_id to the corresponding development stage.
+    The data is extracted from the input file.
 
-    :param file:
-    :return:
+    :param (file) data_file
+    :return (dictionary): embryo_id_to_embryo_stage
     """
-    embryoId_to_embryoStage = dict()
-    file.readline()
-    for line in file:
+    embryo_id_to_embryo_stage = dict()
+    data_file.readline()
+    for line in data_file:
         line_elements = line.split()
-        embryoId_to_embryoStage[line_elements[0]] = line_elements[1]
-    return embryoId_to_embryoStage
+        embryo_id_to_embryo_stage[line_elements[0]] = line_elements[1]
+    return embryo_id_to_embryo_stage
 
 
-def extract_embryoStage_to_embryoIds(file):
+def extract_embryo_stage_to_embryo_ids(data_file):
     """
-    Create a dictionary from an embryo development stage to a list of the corresponding embroyIds
+    Create a dictionary that maps the embryo development stage to a list of corresponding embryos
+    whose gene expression profile was measured at this stage.
+    The data is extracted from the input file.
 
-    :param file:
-    :return:
+    :param (file) data_file
+    :return (dictionary): embryo_stage_to_embryo_ids
     """
 
-    embryoStage_to_embryoIds = dict()
-    file.readline()
-    for line in file:
+    embryo_stage_to_embryo_ids = dict()
+    data_file.readline()
+    for line in data_file:
         line_elements = line.split()
-        if line_elements[1] in embryoStage_to_embryoIds.keys():
-            embryoStage_to_embryoIds[line_elements[1]] += [line_elements[0]]
+        if line_elements[1] in embryo_stage_to_embryo_ids.keys():
+            embryo_stage_to_embryo_ids[line_elements[1]] += [line_elements[0]]
         else:
-            embryoStage_to_embryoIds[line_elements[1]] = [line_elements[0]]
-    return embryoStage_to_embryoIds
+            embryo_stage_to_embryo_ids[line_elements[1]] = [line_elements[0]]
+    return embryo_stage_to_embryo_ids
 
 
-def extract_geneId_to_geneEntorpy_to_expressionProfile(file):
+def extract_gene_id_to_gene_entropy_and_expression_profile(data_file):
     """
+    Creates two dictionaries: one dictionary that maps the gene_id to its corresponding gene entropy and
+                             one dictionary that maps the gene_id to its corresponding expression_profile
+    The data is extracted from the input file.
 
-    :param file:
-    :return:
+    :param (file) data_file
+    :return (dictionary, dictionary): gene_id_to_gene_entropy, gene_id_to_expression_profile
     """
-    geneId_to_geneEntropy = dict()
-    geneId_to_expressionProfile = dict()
+    gene_id_to_gene_entropy = dict()
+    gene_id_to_expression_profile = dict()
 
-    file.readline()
+    data_file.readline()
     num_genes = 0
-    for line in file:
+    for line in data_file:
         line_elements = line.split()
         gene_entropy = compute_gene_entropy(compute_probability_distribution(line_elements[1:]))
-        geneId_to_geneEntropy[line_elements[0]] = gene_entropy
+        gene_id_to_gene_entropy[line_elements[0]] = gene_entropy
 
         if (gene_entropy > gene_entropy_threshold) & (num_genes < max_num_genes):
             num_genes += 1
-            geneId_to_expressionProfile[line_elements[0]] = line_elements[1:]
+            gene_id_to_expression_profile[line_elements[0]] = line_elements[1:]
 
-    return geneId_to_geneEntropy, geneId_to_expressionProfile
+    return gene_id_to_gene_entropy, gene_id_to_expression_profile
 
-def extract_embryoId_to_geneExpressions (file, geneId_to_geneEntropy):
+
+def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, gene_entropy_threshold, max_num_genes):
+    """
+    Creates a dictionary that maps each embryo_id to the corresponding list of gene expression levels.
+    The order of the genes whose expression levels are in the list is the same for every embryo.
+
+    A training example for the feedforward neural network and the recurrent neural network consists of an embryo
+    and the input data to the networks is represented by the corresponding gene expressions.
+
+    The data is extracted from the input file.
+
+    :param (file) data_file
+    :param (dictionary) gene_id_to_gene_entropy: the entropy of each gene.
+    :param (float) gene_entropy_threshold: the minimum entropy a gene needs to have in order to be selected to be part
+                                           of the input data to the neural networks
+    :param (integer) max_num_genes: the maximum number of genes whose expression levels can be used as
+                                    inputs to the neural networks
+    :return (dictionary): embryo_id_to_gene_expressions
     """
 
-    :param file:
-    :param geneId_to_geneEntropy:
-    :return:
-    """
-    embryoId_to_geneExpressions = dict()
+    embryo_id_to_gene_expressions = dict()
 
-    #read first line and create an entry in the dictionary for each embryoId
-    embryoIds = (file.readline()).split()
-    embryoIds = embryoIds[1:]
+    """ Read the first line of the input file and create an entry in the dictionary for each embryo_id. """
+    embryo_ids = (data_file.readline()).split()
+    embryo_ids = embryo_ids[1:]
 
-    for embryoId in embryoIds:
-        embryoId_to_geneExpressions[embryoId] = []
+    for embryo_id in embryo_ids:
+        embryo_id_to_gene_expressions[embryo_id] = []
 
     num_genes = 0
-    for line in file:
+    for line in data_file:
         line_elements = line.split()
-        if (geneId_to_geneEntropy[line_elements[0]] > gene_entropy_threshold) & (num_genes < max_num_genes) & \
-                (len(line_elements) == len(embryoIds) + 1):
+        if (gene_id_to_gene_entropy[line_elements[0]] > gene_entropy_threshold) & (num_genes < max_num_genes) & \
+                (len(line_elements) == len(embryo_ids) + 1):
             num_genes += 1
-            for index in range(len(embryoIds)):
-                embryoId_to_geneExpressions[embryoIds[index]] += [line_elements[index+1]]
+            for index in range(len(embryo_ids)):
+                embryo_id_to_gene_expressions[embryo_ids[index]] += [line_elements[index + 1]]
+
+    print len(embryo_id_to_gene_expressions['GSM896803'])
+
+    return embryo_id_to_gene_expressions
 
 
-    print len(embryoId_to_geneExpressions['GSM896803'])
-    return embryoId_to_geneExpressions
+def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster_id):
+    """
+    Creates a dictionary that maps each embryo_id to the corresponding list of gene expression levels .
+    The order of the genes whose expression levels are in the list is the same for every embryo.
+
+    A training example for the superlayered neural network consists of an embryo
+    and the input data to the networks is represented by the corresponding gene expressions for each gene cluster.
+
+    The data is extracted from the input file.
+
+    :param (file) data_file
+    :param (dictionary) gene_id_to_cluster_id:
+    :return (dictionary): embryo_id_to_gene_expressions
+    """
+
+    embryo_id_to_gene_expressions_clusters = dict()
+    gene_ids = gene_id_to_cluster_id.keys()
+    max_cluster_id = max(gene_id_to_cluster_id.values()) + 1
+    print "max cluster"
+    print max_cluster_id
+
+    """ Read the first line of the input file and create an entry in the dictionary for each embryo_id. """
+    embryo_ids = (data_file.readline()).split()
+    embryo_ids = embryo_ids[1:]
+
+    for embryo_id in embryo_ids:
+        embryo_id_to_gene_expressions_clusters[embryo_id] = dict()
+        for cluster_id in range(max_cluster_id):
+            embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = []
+
+    for line in data_file:
+        line_elements = line.split()
+        if (line_elements[0] in gene_ids) & (len(line_elements) == len(embryo_ids) + 1):
+            cluster_id = gene_id_to_cluster_id[line_elements[0]]
+            for index in range(len(embryo_ids)):
+                embryo_id_to_gene_expressions_clusters[embryo_ids[index]][cluster_id] += [line_elements[index + 1]]
+
+    print embryo_id_to_gene_expressions_clusters
+
+    return embryo_id_to_gene_expressions_clusters
+
 
 def create_oneHotEncoding(embryoStages):
     """
@@ -363,19 +436,28 @@ class EpigeneticsData(object):
     gene_expressions_file = open('data/epigenetics_data/human_early_embryo_gene_expression.txt', 'r')
     embryo_stage_file = open('data/epigenetics_data/human_early_embryo_stage.txt', 'r')
 
-    embryoId_to_embryoStage = extract_embryoId_to_embryoStage(embryo_stage_file)
+    embryo_id_to_embryo_stage = extract_embryo_id_to_embryo_stage(embryo_stage_file)
     embryo_stage_file.seek(0)
-    embryoStage_to_embryoIds = extract_embryoStage_to_embryoIds(embryo_stage_file)
+    embryoStage_to_embryoIds = extract_embryo_stage_to_embryo_ids(embryo_stage_file)
 
-    geneId_to_geneEntropy, geneId_to_expressionProfile = extract_geneId_to_geneEntorpy_to_expressionProfile(gene_expressions_file)
+    geneId_to_geneEntropy, geneId_to_expressionProfile = extract_gene_id_to_gene_entropy_and_expression_profile(gene_expressions_file)
     gene_expressions_file.seek(0)
-    embryoId_to_geneExpressions = extract_embryoId_to_geneExpressions(gene_expressions_file, geneId_to_geneEntropy)
+    embryoId_to_geneExpressions = extract_embryo_id_to_gene_expressions(
+        gene_expressions_file, geneId_to_geneEntropy, gene_entropy_threshold, max_num_genes)
 
-    embryoIds = embryoId_to_embryoStage.keys()
+    gene_expressions_file.seek(0)
+    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 3)
+    embryoId_to_geneExpressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
+        gene_expressions_file, gene_id_to_gene_cluster)
+
+    embryoIds = embryo_id_to_embryo_stage.keys()
     input_data_size = len(embryoId_to_geneExpressions[embryoIds[0]])
 
     gene_expressions_file.close()
     embryo_stage_file.close()
+
+
+
 
     embryoStages = embryoStage_to_embryoIds.keys()
     embryoStage_to_oneHotEncoding = create_oneHotEncoding(embryoStages)
@@ -393,7 +475,7 @@ class EpigeneticsData(object):
         output_size,
         embryoId_to_geneExpressions,
         embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage)
+        embryo_id_to_embryo_stage)
 
     validation_dataset = create_validation_dataset(
         validation_embryoIds,
@@ -401,7 +483,7 @@ class EpigeneticsData(object):
         output_size,
         embryoId_to_geneExpressions,
         embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage)
+        embryo_id_to_embryo_stage)
 
     test_dataset = create_test_dataset(
         test_embryoIds,
@@ -409,7 +491,7 @@ class EpigeneticsData(object):
         output_size,
         embryoId_to_geneExpressions,
         embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage)
+        embryo_id_to_embryo_stage)
 
     k_fold_embryoIds = create_k_fold_embryoIds(k, embryoStage_to_embryoIds)
     print k_fold_embryoIds
@@ -421,6 +503,6 @@ class EpigeneticsData(object):
         output_size,
         embryoId_to_geneExpressions,
         embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage)
+        embryo_id_to_embryo_stage)
 
 
