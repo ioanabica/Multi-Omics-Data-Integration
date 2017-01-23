@@ -1,33 +1,13 @@
 import math
 import numpy as np
 from gene_clustering import hierarchical_clustering
+from epigenetics_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.0
-max_num_genes = 8
+max_num_genes = 256
 # Number of k folds
 k = 6
-
-
-def compute_probability_distribution(gene_expressions):
-    """
-    Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
-    to the neural network architectures.
-
-    :param (list) gene_expressions :  The un-normalized gene expression profile for a training example
-    :return (list): normalized_gene_expressions: The normalized gene expression profile for a training
-             example
-    """
-
-    gene_expressions_sum = 0.0
-    for gene_expression in gene_expressions:
-        gene_expressions_sum += float(gene_expression)
-    normalized_gene_expressions = range(len(gene_expressions))
-    for index in range(len(gene_expressions)):
-        normalized_gene_expressions[index] = float(gene_expressions[index])/gene_expressions_sum
-
-    return normalized_gene_expressions
-
 
 def compute_gene_entropy(gene_expressions):
     """
@@ -68,7 +48,7 @@ def extract_embryo_id_to_embryo_stage(data_file):
 
 def extract_embryo_stage_to_embryo_ids(data_file):
     """
-    Create a dictionary that maps the embryo development stage to a list of corresponding embryos
+    Create a dictionary that maps the embryo development stage to a list of corresponding embryo_ids
     whose gene expression profile was measured at this stage.
     The data is extracted from the input file.
 
@@ -150,6 +130,10 @@ def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, ge
             for index in range(len(embryo_ids)):
                 embryo_id_to_gene_expressions[embryo_ids[index]] += [line_elements[index + 1]]
 
+    for embryo_id in embryo_ids:
+        embryo_id_to_gene_expressions[embryo_id] = \
+            compute_probability_distribution(embryo_id_to_gene_expressions[embryo_id])
+
     print len(embryo_id_to_gene_expressions['GSM896803'])
 
     return embryo_id_to_gene_expressions
@@ -157,26 +141,35 @@ def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, ge
 
 def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster_id):
     """
-    Creates a dictionary that maps each embryo_id to the corresponding list of gene expression levels .
-    The order of the genes whose expression levels are in the list is the same for every embryo.
+    Creates a dictionary that maps each embryo_id to the corresponding dictionary that contains the mapping from
+    the cluster_id to the gene expression levels in the cluster. For example, by considering 2 embryos and 2 clusters,
+    where the first cluster consists of gene_1 and gene_2 and the second cluster consists of gene_3 and gene_4,
+    the embryo_id_to_gene_expressions_clusters_dictionary will have the form:
+
+    {'embryo_1': {'0': [normalized_expressions_level_gene_1, normalized_expression_level_gene_2],
+    '1': [normalized_expression_level_gene_3, normalized_expression_level_gene_4]},
+    'embryo_2': {'0': [normalized_expression_level_gene_1, normalized_expression_level_gene_2],
+    '1': [normalized_expression_level_gene_3, normalized_expression_level_gene_4]}
+
+    The order of the genes whose expression levels are in the list is the same for every cluster.
 
     A training example for the superlayered neural network consists of an embryo
-    and the input data to the networks is represented by the corresponding gene expressions for each gene cluster.
+    and the input data to each feedforward neural netowkr in the superlayered architecture is represented by
+    the corresponding gene expressions for the corresponding cluster.
 
     The data is extracted from the input file.
 
     :param (file) data_file
-    :param (dictionary) gene_id_to_cluster_id:
-    :return (dictionary): embryo_id_to_gene_expressions
+    :param (dictionary) gene_id_to_cluster_id: the cluster assignments for each gene
+    :return (dictionary): embryo_id_to_gene_expressions_clusters
     """
 
     embryo_id_to_gene_expressions_clusters = dict()
     gene_ids = gene_id_to_cluster_id.keys()
     max_cluster_id = max(gene_id_to_cluster_id.values()) + 1
-    print "max cluster"
-    print max_cluster_id
 
-    """ Read the first line of the input file and create an entry in the dictionary for each embryo_id. """
+    """ Read the first line of the input file and create an entry in the dictionary for each embryo_id.
+        Then, for each embryo_id, create an entry in their dictionary for each cluster_id."""
     embryo_ids = (data_file.readline()).split()
     embryo_ids = embryo_ids[1:]
 
@@ -190,245 +183,80 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
         if (line_elements[0] in gene_ids) & (len(line_elements) == len(embryo_ids) + 1):
             cluster_id = gene_id_to_cluster_id[line_elements[0]]
             for index in range(len(embryo_ids)):
-                embryo_id_to_gene_expressions_clusters[embryo_ids[index]][cluster_id] += [line_elements[index + 1]]
+                embryo_id_to_gene_expressions_clusters[embryo_ids[index]][cluster_id] += \
+                    [line_elements[index + 1]]
+
+    for embryo_id in embryo_ids:
+        for cluster_id in range(max_cluster_id):
+            embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = \
+                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id])
 
     print embryo_id_to_gene_expressions_clusters
 
     return embryo_id_to_gene_expressions_clusters
 
 
-def create_oneHotEncoding(embryoStages):
+def create_one_hot_encoding(embryo_stages):
     """
+    Creates a dictionary that contains a mapping from each embryo_stage to a distinct one hot encoding. This
+    represents the output label for each training exampel.
 
-    :param embryoStages:
-    :return:
+    :param (dictionary) embryo_stages: the embryonic development stages that the neural networks are predicting
+    :return (dictionary): embryo_stage_to_one_hot_encoding
     """
-    embryoStage_to_oneHotEncoding = dict()
+    embryo_stage_to_one_hot_encoding = dict()
 
-    for index in range(len(embryoStages)):
-        oneHotEncoding = [0.0]*len(embryoStages)
-        oneHotEncoding[index] = 1.0
-        embryoStage_to_oneHotEncoding[embryoStages[index]] = oneHotEncoding
+    for index in range(len(embryo_stages)):
+        one_hot_encoding = [0.0]*len(embryo_stages)
+        one_hot_encoding[index] = 1.0
+        embryo_stage_to_one_hot_encoding[embryo_stages[index]] = one_hot_encoding
 
-    return embryoStage_to_oneHotEncoding
+    return embryo_stage_to_one_hot_encoding
 
 
-def extract_training_validation_test_embryoIds(embryoStage_to_embryoIds):
+def compute_clusters_size(gene_clusters):
     """
+    Computs the number of genes in each cluster.
 
-    :param embryoStage_to_embryoIds:
-    :return:
+    :param (list) gene_clusters: a list containing the clusters
+    :return (list): clusters_size: a list containing the cluster sizes
     """
-    training_embryoIds = []
-    validation_embryoIds = []
-    test_embryoIds = []
-    embryoStages = embryoStage_to_embryoIds.keys()
+    clusters_size = []
+    for index in range(len(gene_clusters)):
+        clusters_size.append(len(gene_clusters[index]))
+    return clusters_size
+
+
+def extract_training_validation_test_embryo_ids(embryo_stage_to_embryo_ids):
+    """
+    Deprecated: use k-fold cross validation instead
+
+    :param embryo_stage_to_embryo_ids:
+    :return: training_embryo_ids
+    :return: validation_embryo_ids
+    :return: test_embryo_ids
+    """
+    training_embryo_ids = []
+    validation_embryo_ids = []
+    test_embryo_ids = []
+
+    embryoStages = embryo_stage_to_embryo_ids.keys()
     for embryoStage in embryoStages:
-        embryoIds = embryoStage_to_embryoIds[embryoStage]
+        embryoIds = embryo_stage_to_embryo_ids[embryoStage]
         if len(embryoIds) < 6:
-            test_embryoIds += [embryoIds[0]]
-            validation_embryoIds += [embryoIds[1]]
-            training_embryoIds += embryoIds[2:]
+            test_embryo_ids += [embryoIds[0]]
+            validation_embryo_ids += [embryoIds[1]]
+            training_embryo_ids += embryoIds[2:]
         else:
-            test_embryoIds += embryoIds[0:2]
-            validation_embryoIds += embryoIds[2:4]
-            training_embryoIds += embryoIds[4:]
+            test_embryo_ids += embryoIds[0:2]
+            validation_embryo_ids += embryoIds[2:4]
+            training_embryo_ids += embryoIds[4:]
 
-    return training_embryoIds, validation_embryoIds, test_embryoIds
+    return training_embryo_ids, validation_embryo_ids, test_embryo_ids
 
-
-def create_training_dataset(
-        training_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage):
-    """
-
-    :param training_embryoIds:
-    :param input_data_size:
-    :param output_size:
-    :param embryoId_to_geneExpressions:
-    :param embryoStage_to_oneHotEncoding:
-    :param embryoId_to_embryoStage:
-    :return:
-    """
-
-    training_dataset = dict()
-
-    training_data = np.ndarray(shape=(len(training_embryoIds), input_data_size),
-                               dtype=np.float32)
-    training_labels = np.ndarray(shape=(len(training_embryoIds), output_size),
-                                 dtype=np.float32)
-    np.random.shuffle(training_embryoIds)
-    index = 0
-    for embryoId in training_embryoIds:
-        training_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
-        training_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
-        index += 1
-
-    training_dataset["training_data"] = training_data
-    training_dataset["training_labels"] = training_labels
-
-    return training_dataset
-
-def create_validation_dataset(
-        validation_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage):
-
-    """
-
-    :param validation_embryoIds:
-    :param input_data_size:
-    :param output_size:
-    :param embryoId_to_geneExpressions:
-    :param embryoStage_to_oneHotEncoding:
-    :param embryoId_to_embryoStage:
-    :return:
-    """
-
-    validation_dataset = dict()
-    validation_data = np.ndarray(shape=(len(validation_embryoIds), input_data_size),
-                                 dtype=np.float32)
-    validation_labels = np.ndarray(shape=(len(validation_embryoIds), output_size),
-                                   dtype=np.float32)
-
-    np.random.shuffle(validation_embryoIds)
-    index = 0
-    for embryoId in validation_embryoIds:
-        validation_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
-        validation_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
-        index += 1
-
-    validation_dataset["validation_data"] = validation_data
-    validation_dataset["validation_labels"] = validation_labels
-
-    return validation_dataset
-
-
-def create_test_dataset(
-        test_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage):
-
-    """
-
-    :param test_embryoIds:
-    :param input_data_size:
-    :param output_size:
-    :param embryoId_to_geneExpressions:
-    :param embryoStage_to_oneHotEncoding:
-    :param embryoId_to_embryoStage:
-    :return:
-    """
-
-    test_dataset = dict()
-    # create test data
-    test_data = np.ndarray(shape=(len(test_embryoIds), input_data_size),
-                           dtype=np.float32)
-    test_labels = np.ndarray(shape=(len(test_embryoIds), output_size),
-                             dtype=np.float32)
-
-    np.random.shuffle(test_embryoIds)
-    index = 0
-    for embryoId in test_embryoIds:
-        test_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
-        test_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
-        index += 1
-
-    test_dataset["test_data"] = test_data
-    test_dataset["test_labels"] = test_labels
-
-    return test_dataset
-
-def create_k_fold_embryoIds(k, embryoStage_to_embryoIds):
-    """
-
-    :param k:
-    :param embryoStage_to_embryoIds:
-    :return:
-    """
-    k_fold_embryoIds = dict()
-    for index in range(k):
-        k_fold_embryoIds[index] = []
-
-    embryoStages = embryoStage_to_embryoIds.keys()
-    for embryoStage in embryoStages:
-        embryoIds = embryoStage_to_embryoIds[embryoStage]
-        if len(embryoIds) < k:
-            for index in range(len(embryoIds)):
-                k_fold_embryoIds[index] += [embryoIds[index]]
-        else:
-            group_size = len(embryoIds)/k
-            for index in range(k-1):
-                k_fold_embryoIds[index] += embryoIds[index*group_size:(index+1)*group_size]
-            k_fold_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
-
-    return k_fold_embryoIds
-
-
-def create_k_fold_datasets(
-        k,
-        k_fold_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryoId_to_embryoStage):
-    """
-
-    :param k:
-    :param k_fold_embryoIds:
-    :param input_data_size:
-    :param output_size:
-    :param embryoId_to_geneExpressions:
-    :param embryoStage_to_oneHotEncoding:
-    :param embryoId_to_embryoStage:
-    :return:
-    """
-
-    k_fold_datasets = dict()
-    for index in range(k):
-        k_fold_datasets[index] = dict()
-
-    for index_i in range(k):
-        validation_embryoIds = k_fold_embryoIds[index_i]
-        training_embryoIds = []
-        for index_j in range(k):
-            if index_j != index_i:
-                training_embryoIds += k_fold_embryoIds[index_j]
-
-        training_dataset = create_training_dataset(
-            training_embryoIds,
-            input_data_size,
-            output_size,
-            embryoId_to_geneExpressions,
-            embryoStage_to_oneHotEncoding,
-            embryoId_to_embryoStage)
-
-        validation_dataset = create_validation_dataset(
-            validation_embryoIds,
-            input_data_size,
-            output_size,
-            embryoId_to_geneExpressions,
-            embryoStage_to_oneHotEncoding,
-            embryoId_to_embryoStage)
-
-        k_fold_datasets[index_i]["training_dataset"] = training_dataset
-        k_fold_datasets[index_i]["validation_dataset"] = validation_dataset
-
-    return k_fold_datasets
 
 """
-Class that extracts the epigenetics dataset
+Class that extracts the data to perform supervised learning using the neural network architectures.
 """
 
 class EpigeneticsData(object):
@@ -438,71 +266,71 @@ class EpigeneticsData(object):
 
     embryo_id_to_embryo_stage = extract_embryo_id_to_embryo_stage(embryo_stage_file)
     embryo_stage_file.seek(0)
-    embryoStage_to_embryoIds = extract_embryo_stage_to_embryo_ids(embryo_stage_file)
+    embryo_stage_to_embryo_ids = extract_embryo_stage_to_embryo_ids(embryo_stage_file)
 
-    geneId_to_geneEntropy, geneId_to_expressionProfile = extract_gene_id_to_gene_entropy_and_expression_profile(gene_expressions_file)
-    gene_expressions_file.seek(0)
-    embryoId_to_geneExpressions = extract_embryo_id_to_gene_expressions(
-        gene_expressions_file, geneId_to_geneEntropy, gene_entropy_threshold, max_num_genes)
+    geneId_to_gene_entropy, geneId_to_expressionProfile = \
+        extract_gene_id_to_gene_entropy_and_expression_profile(gene_expressions_file)
 
     gene_expressions_file.seek(0)
-    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 3)
-    embryoId_to_geneExpressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
+    embryo_id_to_gene_expressions = extract_embryo_id_to_gene_expressions(
+        gene_expressions_file, geneId_to_gene_entropy, gene_entropy_threshold, max_num_genes)
+
+    gene_expressions_file.seek(0)
+    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 2)
+    embryo_id_to_gene_expressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
         gene_expressions_file, gene_id_to_gene_cluster)
-
-    embryoIds = embryo_id_to_embryo_stage.keys()
-    input_data_size = len(embryoId_to_geneExpressions[embryoIds[0]])
 
     gene_expressions_file.close()
     embryo_stage_file.close()
 
+    embryoIds = embryo_id_to_embryo_stage.keys()
+    input_data_size = len(embryo_id_to_gene_expressions[embryoIds[0]])
 
+    clusters_size = compute_clusters_size(gene_clusters)
+    print clusters_size
 
-
-    embryoStages = embryoStage_to_embryoIds.keys()
-    embryoStage_to_oneHotEncoding = create_oneHotEncoding(embryoStages)
-    output_size = len(embryoStages)
+    embryo_stages = embryo_stage_to_embryo_ids.keys()
+    embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+    output_size = len(embryo_stages)
 
     training_embryoIds, validation_embryoIds, test_embryoIds = \
-        extract_training_validation_test_embryoIds(embryoStage_to_embryoIds)
-
+        extract_training_validation_test_embryo_ids(embryo_stage_to_embryo_ids)
 
     training_embryoIds += test_embryoIds
 
     training_dataset = create_training_dataset(
-        training_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryo_id_to_embryo_stage)
+        training_embryoIds, input_data_size, output_size,
+        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
+
+    training_dataset_cluster = create_training_dataset_with_clusters(
+        training_embryoIds, clusters_size, output_size,
+        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
+
+    #print training_dataset_cluster
 
     validation_dataset = create_validation_dataset(
-        validation_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryo_id_to_embryo_stage)
+        validation_embryoIds, input_data_size, output_size,
+        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
+
+    validation_dataset_clusters = create_validation_dataset_with_clusters(
+        validation_embryoIds, clusters_size, output_size,
+        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
+
+    #print validation_dataset_clusters
+
 
     test_dataset = create_test_dataset(
-        test_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryo_id_to_embryo_stage)
+        test_embryoIds, input_data_size, output_size,
+        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
 
-    k_fold_embryoIds = create_k_fold_embryoIds(k, embryoStage_to_embryoIds)
-    print k_fold_embryoIds
+    k_fold_embryoIds = create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids)
 
     k_fold_datasets = create_k_fold_datasets(
-        k,
-        k_fold_embryoIds,
-        input_data_size,
-        output_size,
-        embryoId_to_geneExpressions,
-        embryoStage_to_oneHotEncoding,
-        embryo_id_to_embryo_stage)
+        k, k_fold_embryoIds, input_data_size, output_size,
+        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
 
+
+    k_fold_datasets_with_clusters = create_k_fold_datasets_with_clusters(
+        k, k_fold_embryoIds, clusters_size, output_size,
+        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
 

@@ -1,6 +1,7 @@
 import numpy as np
 from feedforward_neural_network import train_feedforward_neural_network
-from recurrent_neural_network import train_recurrent_neural_network
+from LSTM_recurrent_neural_network import train_recurrent_neural_network
+from gene_clustering import hierarchical_clustering
 
 num_classes = 7
 num_genes = 256
@@ -104,6 +105,8 @@ def create_validation_dataset():
     return validation_dataset
 
 
+# create synthetic data for clustering
+
 class SyntheticData(object):
 
     training_dataset = create_training_dataset()
@@ -111,5 +114,4 @@ class SyntheticData(object):
 
     validation_accuracy = train_recurrent_neural_network(training_dataset, validation_dataset, num_genes,
                                                             num_classes)
-
 

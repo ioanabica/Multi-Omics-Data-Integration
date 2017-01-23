@@ -5,7 +5,6 @@ from scipy.cluster.hierarchy import linkage,dendrogram
 
 
 def find_closest_clusters(distance_matrix):
-
     min = float('inf')
     min_index = 0
     max_index = 0
@@ -23,19 +22,19 @@ def find_closest_clusters(distance_matrix):
     return min_index, max_index
 
 
-def hierarchical_clustering(geneId_to_expressionProfile, min_num_clusters):
-    geneIds = geneId_to_expressionProfile.keys()
-    geneExpressions = []
-    for geneId in geneIds:
-        geneExpressions += [geneId_to_expressionProfile[geneId]]
+def hierarchical_clustering(gene_id_to_expression_profile, min_num_clusters):
+    gene_ids = gene_id_to_expression_profile.keys()
+    gene_expressions = []
+    for geneId in gene_ids:
+        gene_expressions += [gene_id_to_expression_profile[geneId]]
 
-    distance_matrix = squareform(pdist(geneExpressions, metric='correlation'))
+    distance_matrix = squareform(pdist(gene_expressions, metric='correlation'))
 
     # create independent clusters, such that each gene is part of a single cluster
     clusters = list()
-    for index in range(len(geneIds)):
-        clusters.append([geneIds[index]])
-    num_clusters = len(geneIds)
+    for index in range(len(gene_ids)):
+        clusters.append([gene_ids[index]])
+    num_clusters = len(gene_ids)
 
     while(num_clusters > min_num_clusters):
         min_index, max_index = find_closest_clusters(distance_matrix)
@@ -70,19 +69,17 @@ def hierarchical_clustering(geneId_to_expressionProfile, min_num_clusters):
         for gene in clusters[index_i]:
             gene_id_to_cluster_id[gene] = index_i
 
-    plot_dendogram(geneId_to_expressionProfile)
-
     return gene_id_to_cluster_id, clusters
 
 
-def plot_dendogram(geneId_to_expressionProfile):
-    geneExpressions = []
-    geneIds = geneId_to_expressionProfile.keys()
-    for geneId in geneIds:
-        geneExpressions += [geneId_to_expressionProfile[geneId]]
+def plot_dendogram(gene_id_to_expression_profile):
+    gene_expressions = []
+    gene_ids = gene_id_to_expression_profile.keys()
+    for gene_id in gene_ids:
+        gene_expressions += [gene_id_to_expression_profile[gene_id]]
 
-    distance_matrix = pdist(geneExpressions, metric='correlation')
-    dendrogram(linkage(distance_matrix, method='average'), labels=geneIds)
+    distance_matrix = pdist(gene_expressions, metric='correlation')
+    dendrogram(linkage(distance_matrix, method='average'), labels=gene_ids)
 
     plt.ylabel("Distances")
     plt.xlabel("Genes")

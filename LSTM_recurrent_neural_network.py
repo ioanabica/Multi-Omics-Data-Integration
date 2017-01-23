@@ -274,6 +274,7 @@ def inference(input_data, sequence_length, weights, biases, outputs, cell_states
     LSTM_3_cell_state = cell_states['LSTM_3']
 
     for current_input in input_data:
+
         LSTM_1_output, LSTM_1_cell_state = \
             lstm(current_input, LSTM_1_output, LSTM_1_cell_state, weights['LSMT_1'], biases['LSTM_1'])
         #LSTM_1_output = tf.nn.dropout(LSTM_1_output, keep_probability)
@@ -392,6 +393,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
         tf_keep_probability = tf.placeholder(tf.float32)
 
         # initialize weights and biases for the LSTM cell and MLP network
+        # TODO: create a function that does this initialization
         weights = dict()
         biases = dict()
         weights['LSMT_1'], biases['LSTM_1'] = initializa_weights_and_biases_for_LSTM_cell(input_size, num_units_1)
@@ -433,7 +435,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
 
         validation_predictions = tf.nn.softmax(validation_logits)
 
-    steps = 4000
+    steps = 12000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases
