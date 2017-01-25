@@ -45,10 +45,11 @@ def hierarchical_clustering(gene_id_to_expression_profile, min_num_clusters):
         max_cluster_size = len(clusters[max_index])
 
         for index_i in range(num_clusters):
-            #distance_matrix[min_index][index_i] = \
-                #(distance_matrix[min_index][index_i] + distance_matrix[max_index][index_i])/2
+            """Weighted
+            distance_matrix[min_index][index_i] = \
+                (distance_matrix[min_index][index_i] + distance_matrix[max_index][index_i])/2 """
 
-            # average (UPGMA)
+            """ Average (UPGMA) """
             distance_matrix[min_index][index_i] = \
                 ((distance_matrix[min_index][index_i] * min_cluster_size) +
                  (distance_matrix[max_index][index_i] * max_cluster_size))/(min_cluster_size + max_cluster_size)
@@ -70,6 +71,18 @@ def hierarchical_clustering(gene_id_to_expression_profile, min_num_clusters):
             gene_id_to_cluster_id[gene] = index_i
 
     return gene_id_to_cluster_id, clusters
+
+
+def k_means_clustering(gene_id_to_expression_profile, num_clusters):
+    """ """
+
+    gene_ids = gene_id_to_expression_profile.keys()
+    gene_expressions = []
+    for geneId in gene_ids:
+        gene_expressions += [gene_id_to_expression_profile[geneId]]
+
+    distance_matrix = squareform(pdist(gene_expressions, metric='correlation'))
+
 
 
 def plot_dendogram(gene_id_to_expression_profile):

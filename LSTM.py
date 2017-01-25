@@ -11,13 +11,12 @@ num_units_3 = 256
 hidden_units_1 = 512
 hidden_units_2 = 256
 hidden_units_3 = 64
-hidden_units_4 = 32
 
 keep_probability = 0.5
 
 # Training parameters
 learning_rate = 0.0001
-weight_decay = 0.05
+weight_decay = 0.01
 batch_size = 16
 
 epsilon = 1e-3
@@ -100,7 +99,7 @@ def initialize_outputs_and_cell_states_for_LSTMs(batch_size, num_units_1, num_un
 
 
 def initialize_weights_and_biases_for_MLP(
-        input_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size):
+        input_size, hidden_units_1, hidden_units_2, hidden_units_3, output_size):
 
     """
     Feed forward neural network layer used after the LSTM Units. The input to the feed forward neural netowork is
@@ -149,18 +148,9 @@ def initialize_weights_and_biases_for_MLP(
 
     # weights for third hidden layer
     weights_third_hidden_layer = tf.Variable(
-        tf.truncated_normal([hidden_units_3, hidden_units_4],
+        tf.truncated_normal([hidden_units_3, output_size],
                             stddev=math.sqrt(2.0 / float(hidden_units_3))))
     weights['MLP_third_hidden_layer'] = weights_third_hidden_layer
-
-    # biases for forth layer
-    biases_forth_hidden_layer = tf.Variable(tf.zeros(hidden_units_4))
-    biases['MLP_forth_hidden_layer'] = biases_forth_hidden_layer
-
-    # weights for forth layer
-    weights_forth_hidden_layer = tf.Variable(
-        tf.truncated_normal([hidden_units_4, output_size], stddev=math.sqrt(2.0 / float(hidden_units_4))))
-    weights['MLP_forth_hidden_layer'] = weights_forth_hidden_layer
 
     # biases for output layer
     biases_output_layer = tf.Variable(tf.zeros(output_size))
@@ -230,16 +220,8 @@ def MLP_inference(input_data, weights, biases, keep_probability):
         tf.nn.batch_normalization(input_to_third_hidden_layer, mean, variance, None, None, epsilon)),
         keep_probability)
 
-    # forth_hidden_layer
-    input_to_forth_hidden_layer = \
-        tf.matmul(third_hidden_layer, weights['MLP_third_hidden_layer']) + biases['MLP_forth_hidden_layer']
-    mean, variance = tf.nn.moments(input_to_forth_hidden_layer, [0])
-
-    forth_hidden_layer = tf.nn.relu(
-        tf.nn.batch_normalization(input_to_forth_hidden_layer, mean, variance, None, None, epsilon))
-
     # output layer
-    logits = tf.matmul(forth_hidden_layer, weights['MLP_forth_hidden_layer']) + biases['MLP_output_layer']
+    logits = tf.matmul(third_hidden_layer, weights['MLP_third_hidden_layer']) + biases['MLP_output_layer']
 
     return logits
 
@@ -336,8 +318,7 @@ def compute_loss(logits, labels, weights):
     L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
               tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer']) + \
               tf.nn.l2_loss(weights['MLP']['MLP_second_hidden_layer']) + \
-              tf.nn.l2_loss(weights['MLP']['MLP_third_hidden_layer']) + \
-              tf.nn.l2_loss(weights['MLP']['MLP_forth_hidden_layer'])
+              tf.nn.l2_loss(weights['MLP']['MLP_third_hidden_layer'])
 
     loss = tf.reduce_mean(cross_entropy + weight_decay * L2_loss)
 
@@ -399,7 +380,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
         weights['LSMT_2'], biases['LSTM_2'] = initializa_weights_and_biases_for_LSTM_cell(num_units_1, num_units_2)
         weights['LSMT_3'], biases['LSTM_3'] = initializa_weights_and_biases_for_LSTM_cell(num_units_2, num_units_3)
         weights['MLP'], biases['MLP'] = initialize_weights_and_biases_for_MLP(
-            num_units_3, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size)
+            num_units_3, hidden_units_1, hidden_units_2, hidden_units_3, output_size)
 
         # initialize the output and cell_state for the LSTM cells for training
         initial_LSMT_outputs, initial_LSMT_cell_states = \
@@ -434,7 +415,7 @@ def train_recurrent_neural_network(training_dataset, validation_dataset, sequenc
 
         validation_predictions = tf.nn.softmax(validation_logits)
 
-    steps = 12000
+    steps = 9000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases

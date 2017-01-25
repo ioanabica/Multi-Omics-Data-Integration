@@ -5,9 +5,10 @@ from epigenetics_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
 gene_entropy_threshold = 6.0
-max_num_genes = 256
+max_num_genes = 512
 # Number of k folds
-k = 6
+k = 7
+
 
 def compute_gene_entropy(gene_expressions):
     """
@@ -191,8 +192,6 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
             embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = \
                 compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id])
 
-    print embryo_id_to_gene_expressions_clusters
-
     return embryo_id_to_gene_expressions_clusters
 
 
@@ -276,7 +275,7 @@ class EpigeneticsData(object):
         gene_expressions_file, geneId_to_gene_entropy, gene_entropy_threshold, max_num_genes)
 
     gene_expressions_file.seek(0)
-    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 2)
+    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 500)
     embryo_id_to_gene_expressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
         gene_expressions_file, gene_id_to_gene_cluster)
 

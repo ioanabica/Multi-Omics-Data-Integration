@@ -1,6 +1,7 @@
 import numpy as np
 from feedforward_neural_network import train_feedforward_neural_network
-from LSTM_recurrent_neural_network import train_recurrent_neural_network
+#from LSTM_recurrent_neural_network import train_recurrent_neural_network
+from LSTM import train_recurrent_neural_network
 from gene_clustering import hierarchical_clustering
 
 num_classes = 7

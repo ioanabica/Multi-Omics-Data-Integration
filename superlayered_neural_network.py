@@ -5,18 +5,20 @@ import tensorflow as tf
 # Hyperparameters
 
 # first superlayer
-s1_hidden_units_1 = 256
-s1_hidden_units_2 = 128
-s1_hidden_units_3 = 64
-s1_hidden_units_4 = 32
+s1_hidden_units_1 = 512
+s1_hidden_units_2 = 256
+s1_hidden_units_3 = 128
+s1_hidden_units_4 = 64
 
 # second superlayer
-s2_hidden_units_1 = 256
-s2_hidden_units_2 = 128
-s2_hidden_units_3 = 64
-s2_hidden_units_4 = 32
+s2_hidden_units_1 = 512
+s2_hidden_units_2 = 256
+s2_hidden_units_3 = 128
+s2_hidden_units_4 = 64
 
-merge_layer_size = 16
+merge_layer_size_1 = 128
+merge_layer_size_2 = 32
+
 
 keep_probability = 0.5
 epsilon = 1e-3
@@ -39,6 +41,8 @@ def initialize_weights_and_biases_for_one_superlayer(input_data_size, hidden_uni
 
     weights = dict()
     biases = dict()
+
+    print hidden_units
 
     hidden_units_1 = hidden_units[0]
     hidden_units_2 = hidden_units[1]
@@ -98,16 +102,17 @@ def initialize_weights_and_biases_for_one_superlayer(input_data_size, hidden_uni
 
 
 def initialize_weights_and_biases_for_superlayered_network (
-        clusters_size, s1_hidden_units, s2_hidden_units, merge_layer_size, output_size):
+        clusters_size, s1_hidden_units, s2_hidden_units, merge_layer_size_1, merge_layer_size_2, output_size):
+
 
     weights = dict()
     biases = dict()
 
     weights['s1'], biases['s1'] = initialize_weights_and_biases_for_one_superlayer(
-        clusters_size[0], s1_hidden_units, merge_layer_size)
+        clusters_size[0], s1_hidden_units, merge_layer_size_1)
 
     weights['s2'], biases['s2'] = initialize_weights_and_biases_for_one_superlayer(
-        clusters_size[1], s2_hidden_units, merge_layer_size)
+        clusters_size[1], s2_hidden_units, merge_layer_size_1)
 
     # initialize weights for cross connections
     weights['cross_connection_from_s1'] = tf.Variable(
@@ -118,12 +123,19 @@ def initialize_weights_and_biases_for_superlayered_network (
         tf.truncated_normal([s2_hidden_units[1], s1_hidden_units[2]],
                             stddev=math.sqrt(2.0 / float(s2_hidden_units[1]))))
 
-    # biases for merge layer
-    biases['merge_layer'] = tf.Variable(tf.zeros(merge_layer_size))
+    # biases for first merge layer
+    biases['merge_layer_1'] = tf.Variable(tf.zeros(merge_layer_size_1))
 
-    # weights for merge layer
-    weights['merge_layer'] = tf.Variable(
-        tf.truncated_normal([merge_layer_size, output_size], stddev=math.sqrt(2.0 / float(merge_layer_size))))
+    # weights for first merge layer
+    weights['merge_layer_1'] = tf.Variable(
+        tf.truncated_normal([merge_layer_size_1, merge_layer_size_2], stddev=math.sqrt(2.0 / float(merge_layer_size_1))))
+
+    # biases for second merge layer
+    biases['merge_layer_2'] = tf.Variable(tf.zeros(merge_layer_size_2))
+
+    # weights for second layer
+    weights['merge_layer_2'] = tf.Variable(
+        tf.truncated_normal([merge_layer_size_2, output_size], stddev=math.sqrt(2.0 / float(merge_layer_size_2))))
 
     # biases for output layer
     biases_output_layer = tf.Variable(tf.zeros(output_size))
@@ -133,6 +145,15 @@ def initialize_weights_and_biases_for_superlayered_network (
 
 
 def inference(s1_input_data, s2_input_data, weights, biases, keep_probability):
+    """
+
+    :param s1_input_data:
+    :param s2_input_data:
+    :param weights:
+    :param biases:
+    :param keep_probability:
+    :return:
+    """
 
     s1_weights = weights['s1']
     s1_biases = biases['s1']
@@ -222,20 +243,31 @@ def inference(s1_input_data, s2_input_data, weights, biases, keep_probability):
         tf.nn.batch_normalization(s2_input_to_forth_hidden_layer, mean, variance, None, None, epsilon)),
         keep_probability)
 
-    """ Merge layer """
+    """ First merge layer """
 
-    input_to_merge_layer = \
+    input_to_first_merge_layer = \
         tf.matmul(s1_forth_hidden_layer, s1_weights['weights_forth_hidden_layer']) + \
         tf.matmul(s2_forth_hidden_layer, s2_weights['weights_forth_hidden_layer']) + \
-        biases['merge_layer']
-    mean, variance = tf.nn.moments(input_to_merge_layer, [0])
+        biases['merge_layer_1']
+    mean, variance = tf.nn.moments(input_to_first_merge_layer, [0])
 
-    merge_layer = tf.nn.dropout(tf.nn.relu(
-        tf.nn.batch_normalization(input_to_merge_layer, mean, variance, None, None, epsilon)),
+    first_merge_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_first_merge_layer, mean, variance, None, None, epsilon)),
+        keep_probability)
+
+    """ Second merge layer """
+
+    input_to_second_merge_layer = \
+        tf.matmul(first_merge_layer, weights['merge_layer_1']) + \
+        biases['merge_layer_2']
+    mean, variance = tf.nn.moments(input_to_second_merge_layer, [0])
+
+    second_merge_layer = tf.nn.dropout(tf.nn.relu(
+        tf.nn.batch_normalization(input_to_second_merge_layer, mean, variance, None, None, epsilon)),
         keep_probability)
 
     # output layer
-    logits = tf.matmul(merge_layer, weights['merge_layer']) + biases['output_layer']
+    logits = tf.matmul(second_merge_layer, weights['merge_layer_2']) + biases['output_layer']
 
     return logits
 
@@ -328,7 +360,7 @@ def train_superlayered_neural_network(training_dataset, validation_dataset, clus
         s2_hidden_units = [s2_hidden_units_1, s2_hidden_units_2, s2_hidden_units_3, s2_hidden_units_4]
 
         weights, biases = initialize_weights_and_biases_for_superlayered_network(
-            clusters_size, s1_hidden_units, s1_hidden_units, merge_layer_size, output_size)
+            clusters_size, s1_hidden_units, s2_hidden_units, merge_layer_size_1, merge_layer_size_2, output_size)
 
         logits = inference(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
         training_loss = compute_loss(logits, tf_output_labels, weights)
@@ -339,7 +371,7 @@ def train_superlayered_neural_network(training_dataset, validation_dataset, clus
         validation_predictions = tf.nn.softmax(inference(
             s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
-    steps = 8000
+    steps = 9000
     with tf.Session(graph=graph) as session:
 
         # initialize weights and biases

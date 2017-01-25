@@ -15,8 +15,10 @@ def compute_probability_distribution(gene_expressions):
     for gene_expression in gene_expressions:
         gene_expressions_sum += float(gene_expression)
     normalized_gene_expressions = range(len(gene_expressions))
-    for index in range(len(gene_expressions)):
-        normalized_gene_expressions[index] = float(gene_expressions[index])/gene_expressions_sum
+
+    if gene_expressions_sum != 0:
+        for index in range(len(gene_expressions)):
+            normalized_gene_expressions[index] = float(gene_expressions[index])/gene_expressions_sum
 
     return normalized_gene_expressions
 

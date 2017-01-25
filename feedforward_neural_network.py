@@ -1,12 +1,13 @@
 import math
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 # Hyperparameters
-hidden_units_1 = 256
-hidden_units_2 = 128
-hidden_units_3 = 64
-hidden_units_4 = 32
+# hidden_units_1 = 256
+# hidden_units_2 = 128
+# hidden_units_3 = 64
+# hidden_units_4 = 32
 keep_probability = 0.5
 epsilon = 1e-3
 
@@ -17,14 +18,11 @@ batch_size = 16
 
 
 def initialize_weights_and_biases(
-        input_data_size, hidden_units_1, hidden_units_2, hidden_units_3, hidden_units_4, output_size):
+        input_data_size, hidden_units, output_size):
     """
     Initialize the weights for the neural network using He initialization and initialize the biases to zero
     :param input_data_size: number of gene used in the input layer
-    :param hidden_units_1: number of hidden neurons in the first layer
-    :param hidden_units_2: number of hidden neurons in the second layer
-    :param hidden_units_3: number of hidden neurons in the third layer
-    :param hidden_units_4: number of hidden neurons in the forth layer
+    :param hidden_units: number of hidden neurons in each hidden layer
     :param output_size: number of classes in the output layer
     :return: weights dictionary
     :return: biases dictionary
@@ -32,6 +30,11 @@ def initialize_weights_and_biases(
 
     weights = dict()
     biases = dict()
+
+    hidden_units_1 = hidden_units[0]
+    hidden_units_2 = hidden_units[1]
+    hidden_units_3 = hidden_units[2]
+    hidden_units_4 = hidden_units[3]
 
     # weights for the input layer
     weights_input_layer = tf.Variable(
@@ -158,6 +161,7 @@ def compute_loss(logits, labels, weights):
     """
     :param logits:
     :param labels:
+    :param weights
     :return:
     """
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
@@ -186,82 +190,88 @@ def compute_predictions_accuracy(predictions, labels):
     return (100 * num_correct_labels)/predictions.shape[0]
 
 
-def train_feedforward_neural_network(training_dataset, validation_dataset, input_data_size, output_size):
-    """
-    Train the feed forward neural network using gradient descent by trying to minimize the loss.
-    This function is used for cross validation.
+class FeedforwardNeuralNetwork:
 
-    :param training_dataset: dictionary containing the training data and training labels
-    :param validation_dataset: dictionary containing the validation data and validation labels
-    :param input_data_size: the size of the input to the neural network
-    :param output_size: the number of labels in the output
-    :return: the validation accuracy of the model
-    """
+    def __init__(self, input_data_size, hidden_units, output_size):
+        self.input_data_size = input_data_size
+        self.hidden_units = hidden_units
+        self.output_size = output_size
 
-    training_data = training_dataset["training_data"]
-    training_labels = training_dataset["training_labels"]
+    def train_and_validate(self, training_dataset, validation_dataset):
+        """
+        Train the feed forward neural network using gradient descent by trying to minimize the loss.
 
-    validation_data = validation_dataset["validation_data"]
-    validation_labels = validation_dataset["validation_labels"]
+        :param training_dataset: dictionary containing the training data and training labels
+        :param validation_dataset: dictionary containing the validation data and validation labels
+        :return: the validation accuracy of the model
+        """
 
-    graph = tf.Graph()
-    with graph.as_default():
+        training_data = training_dataset["training_data"]
+        training_labels = training_dataset["training_labels"]
 
-        # create placeholders for input tensors
-        tf_input_data = tf.placeholder(tf.float32, shape=(None, input_data_size))
-        tf_input_labels = tf.placeholder(tf.float32, shape=(None, output_size))
+        validation_data = validation_dataset["validation_data"]
+        validation_labels = validation_dataset["validation_labels"]
 
-        # create placeholder for the keep probability
-        # dropout is used during training, but not during testing
-        tf_keep_probability = tf.placeholder(tf.float32)
+        graph = tf.Graph()
+        with graph.as_default():
 
-        weights, biases = initialize_weights_and_biases(
-            input_data_size,
-            hidden_units_1,
-            hidden_units_2,
-            hidden_units_3,
-            hidden_units_4,
-            output_size)
+            # create placeholders for input tensors
+            tf_input_data = tf.placeholder(tf.float32, shape=(None, self.input_data_size), name='TrainingExample')
+            tf_input_labels = tf.placeholder(tf.float32, shape=(None, self.output_size), name='OutputLabel')
 
-        logits = inference(tf_input_data, weights, biases, tf_keep_probability)
-        training_loss = compute_loss(logits, tf_input_labels, weights)
+            # create placeholder for the keep probability
+            # dropout is used during training, but not during testing
+            tf_keep_probability = tf.placeholder(tf.float32)
 
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
+            weights, biases = initialize_weights_and_biases(
+                self.input_data_size, self.hidden_units,  self.output_size)
 
-        training_predictions = tf.nn.softmax(logits)
-        validation_predictions = tf.nn.softmax(inference(validation_data, weights, biases, tf_keep_probability))
+            logits = inference(tf_input_data, weights, biases, tf_keep_probability)
+            training_loss = compute_loss(logits, tf_input_labels, weights)
 
-    steps = 3000
-    with tf.Session(graph=graph) as session:
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
-        # initialize weights and biases
-        tf.initialize_all_variables().run()
+            training_predictions = tf.nn.softmax(logits)
+            validation_predictions = tf.nn.softmax(inference(validation_data, weights, biases, tf_keep_probability))
 
-        for step in range(steps):
+        steps = 6000
+        losses = []
 
-            offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
+        with tf.Session(graph=graph) as session:
 
-            # Create a training minibatch.
-            minibatch_data = training_data[offset:(offset + batch_size), :]
-            minibatch_labels = training_labels[offset:(offset + batch_size), :]
+            # initialize weights and biases
+            tf.initialize_all_variables().run()
 
-            feed_dictionary = create_feed_dictionary(
+            for step in range(steps):
+
+                offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
+
+                # Create a training minibatch.
+                minibatch_data = training_data[offset:(offset + batch_size), :]
+                minibatch_labels = training_labels[offset:(offset + batch_size), :]
+
+                feed_dictionary = create_feed_dictionary(
+                    tf_input_data, tf_input_labels, tf_keep_probability,
+                    minibatch_data, minibatch_labels, keep_probability)
+
+                _, loss, predictions = session.run(
+                    [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
+                losses.append(loss)
+
+                if (step % 500 == 0):
+                    print('Minibatch loss at step %d: %f' % (step, loss))
+                    print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
+
+            plt.plot(range(steps), losses)
+            plt.show()
+
+            validation_feed_dictionary = create_feed_dictionary(
                 tf_input_data, tf_input_labels, tf_keep_probability,
-                minibatch_data, minibatch_labels, keep_probability)
+                validation_data, validation_labels, 1.0)
 
-            _, loss, predictions = session.run(
-                [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
+            validation_accuracy = compute_predictions_accuracy(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
-            if (step % 500 == 0):
-                print('Minibatch loss at step %d: %f' % (step, loss))
-                print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
+            print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        validation_feed_dictionary = create_feed_dictionary(
-            tf_input_data, tf_input_labels, tf_keep_probability,
-            validation_data, validation_labels, 1.0)
-        validation_accuracy = compute_predictions_accuracy(
-                  validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
-
-        print('Validation accuracy: %.1f%%' % validation_accuracy)
-        return validation_accuracy
-
+        return session
