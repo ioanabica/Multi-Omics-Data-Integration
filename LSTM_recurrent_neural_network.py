@@ -137,7 +137,7 @@ class RecurrentNeuralNetwork:
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
             print('Validation accuracy: %.1f%%' % validation_accuracy)
-            
+
         return validation_accuracy
 
     def initializa_weights_and_biases_for_LSTM_cell(self, input_size, num_units):
