@@ -1,11 +1,12 @@
 import numpy as np
-from feedforward_neural_network import train_feedforward_neural_network
-#from LSTM_recurrent_neural_network import train_recurrent_neural_network
-from LSTM import train_recurrent_neural_network
-from gene_clustering import hierarchical_clustering
+import math
+
+from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from feedforward_neural_network import FeedforwardNeuralNetwork
 
 num_classes = 7
 num_genes = 256
+num_shifted_genes = 16
 training_examples_for_class = 10
 validation_examples_for_class = 3
 
@@ -36,19 +37,34 @@ def normalize_data(data_point):
     return normalized_data
 
 
-def create_data_point(num_genes, class_id):
+def create_data_point(num_genes, class_id, class_id_to_shifted_genes):
     mean = 0
     stddev = 1
     data_point = np.random.normal(mean, stddev, num_genes)
 
     shifted_mean = 5
 
+    """
     start_class_genes = class_id * (num_genes/num_classes)
     end_class_genes = (class_id + 1) * (num_genes/num_classes)
     data_point[start_class_genes:end_class_genes] = \
         np.random.normal(shifted_mean, stddev, num_genes/num_classes)
 
-    return normalize_data(data_point)
+
+    class_gene = class_id
+    for index in range(num_shifted_genes):
+        if(class_gene < num_genes)
+            data_point[class_gene] = np.random.normal(shifted_mean, stddev, 1)
+            class_gene += """
+
+
+    shifted_genes = class_id_to_shifted_genes[class_id]
+
+    for shifted_gene in shifted_genes:
+        data_point[shifted_gene] = np.random.normal(shifted_mean, stddev, 1)
+
+
+    return data_point
 
 
 def create_one_hot_encoding(class_id):
@@ -58,7 +74,7 @@ def create_one_hot_encoding(class_id):
     return one_hot_encoding
 
 
-def create_training_dataset():
+def create_training_dataset(class_id_to_shifted_genes):
     """
 
     :return:
@@ -73,16 +89,21 @@ def create_training_dataset():
     for class_id in range(num_classes):
         for index in range(training_examples_for_class):
             training_data[class_id * training_examples_for_class + index, :] = \
-                normalize_data(create_data_point(num_genes, class_id))
+                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes))
             training_labels[class_id * training_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
-    training_dataset["training_data"] = training_data
-    training_dataset["training_labels"] = training_labels
+    data_and_labels = (zip(training_data, training_labels))
+    np.random.shuffle(data_and_labels)
+
+    permutation = np.random.permutation(len(training_data))
+
+    training_dataset["training_data"] = training_data[permutation]
+    training_dataset["training_labels"] = training_labels[permutation]
 
     return training_dataset
 
 
-def create_validation_dataset():
+def create_validation_dataset(class_id_to_shifted_genes):
     """
 
     :return:
@@ -97,7 +118,7 @@ def create_validation_dataset():
     for class_id in range(num_classes):
         for index in range(validation_examples_for_class):
             validation_data[class_id * validation_examples_for_class + index, :] = \
-                normalize_data(create_data_point(num_genes, class_id))
+                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes))
             validation_labels[class_id * validation_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
     validation_dataset["validation_data"] = validation_data
@@ -108,11 +129,32 @@ def create_validation_dataset():
 
 # create synthetic data for clustering
 
+def create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes):
+
+    class_id_to_shifted_genes = dict()
+
+    for index in range(num_classes):
+        shifted_genes = np.random.choice(range(num_genes), num_shifted_genes, replace=False)
+        class_id_to_shifted_genes[index] = shifted_genes
+
+    return class_id_to_shifted_genes
+
+
 class SyntheticData(object):
 
-    training_dataset = create_training_dataset()
-    validation_dataset = create_validation_dataset()
+    class_id_to_shifted_genes = create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes)
+    print class_id_to_shifted_genes
 
-    validation_accuracy = train_recurrent_neural_network(training_dataset, validation_dataset, num_genes,
-                                                            num_classes)
+    training_dataset = create_training_dataset(class_id_to_shifted_genes)
+    validation_dataset = create_validation_dataset(class_id_to_shifted_genes)
+
+    ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
+    validation_accurat = ffnn.train_and_validate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
+
+
+    #rnn = RecurrentNeuralNetwork(num_genes/8, 8, [64, 128, 256], [512, 256, 128, 32], num_classes)
+
+    rnn = RecurrentNeuralNetwork(num_genes/8, 8, [64, 256, 512], [512, 256, 128, 32], num_classes)
+
+    validation_accuracy = rnn.train_and_validate(training_dataset, validation_dataset)
 

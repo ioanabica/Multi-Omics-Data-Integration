@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 # hidden_units_2 = 128
 # hidden_units_3 = 64
 # hidden_units_4 = 32
-keep_probability = 0.5
+#keep_probability = 0.5
 epsilon = 1e-3
 
 # Training parameters
-learning_rate = 0.05
-weight_decay = 0.01
+#learning_rate = 0.05
+#weight_decay = 0.01
 batch_size = 16
 
 logs_path = '/tmp/tensorboard'
@@ -56,8 +56,7 @@ class FeedforwardNeuralNetwork:
             tf_keep_probability = tf.placeholder(tf.float32)
             tf.scalar_summary('dropout_keep_probability', keep_probability)
 
-            weights, biases = self.initialize_weights_and_biases(
-                self.input_data_size, self.hidden_units,  self.output_size)
+            weights, biases = self.initialize_weights_and_biases()
 
             logits = self.inference(tf_input_data, weights, biases, tf_keep_probability)
             training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)

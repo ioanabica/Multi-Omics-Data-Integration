@@ -13,11 +13,12 @@ import tensorflow as tf
 # hidden_units_3 = 64
 # hidden_units_4 = 32
 
-keep_probability = 0.5
+MLP_keep_probability = 0.5
+LSTMs_keep_probability = 0.9
 
 # Training parameters
 learning_rate = 0.0001
-weight_decay = 0.05
+weight_decay = 0.02
 batch_size = 16
 
 epsilon = 1e-3
@@ -63,27 +64,39 @@ class RecurrentNeuralNetwork:
 
             # create placeholder for the keep probability
             # dropout is used during training, but not during testing
-            tf_keep_probability = tf.placeholder(tf.float32)
+            tf_MLP_keep_probability = tf.placeholder(tf.float32)
+            tf_LSTMs_keep_probability = tf.placeholder(tf.float32)
 
             # initialize weights and biases for the LSTM cell and MLP network
             weights, biases = self.initialize_weights_and_biases(
                 self.input_step_size, self.LSTMs_state_size, self.hidden_units, self.output_size)
 
             # initialize the output and cell_state for the LSTM cells for training
-            initial_LSMT_outputs, initial_LSMT_cell_states = \
+            initial_LSTM_outputs, initial_LSTM_cell_states = \
                 self.initialize_outputs_and_cell_states_for_LSTMs(batch_size, self.LSTMs_state_size)
 
             # use the model to perform inference
             logits = self.inference(
                 tf_input_data, self.input_sequence_length, self.input_step_size,
                 weights, biases,
-                initial_LSMT_outputs, initial_LSMT_cell_states,
-                tf_keep_probability)
+                initial_LSTM_outputs, initial_LSTM_cell_states,
+                tf_LSTMs_keep_probability, tf_MLP_keep_probability)
 
             training_loss = self.compute_loss(logits, tf_input_labels, weights)
 
             # TODO: describe how the AdamOptimizer works
             optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
+
+            """
+            optimizer_function = tf.train.AdamOptimizer(learning_rate)
+
+            # Gradient clipping
+
+            gvs = optimizer_function.compute_gradients(training_loss)
+            capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+            optimizer = optimizer_function.apply_gradients(capped_gvs)
+            """
+
 
             print("Training RNN")
             print(learning_rate)
@@ -91,14 +104,14 @@ class RecurrentNeuralNetwork:
             training_predictions = tf.nn.softmax(logits)
 
             # initialize the output and cell_state for the LSTM cells for validation
-            initial_LSMT_outputs, initial_LSMT_cell_states = \
+            initial_LSTM_outputs, initial_LSTM_cell_states = \
                 self.initialize_outputs_and_cell_states_for_LSTMs(len(validation_data), self.LSTMs_state_size)
 
             validation_logits = self.inference(
                 validation_data, self.input_sequence_length, self.input_step_size,
                 weights, biases,
-                initial_LSMT_outputs, initial_LSMT_cell_states,
-                tf_keep_probability)
+                initial_LSTM_outputs, initial_LSTM_cell_states,
+                tf_LSTMs_keep_probability, tf_MLP_keep_probability)
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
@@ -119,8 +132,8 @@ class RecurrentNeuralNetwork:
                 minibatch_labels = training_labels[offset:(offset + batch_size), :]
 
                 feed_dictionary = self.create_feed_dictionary(
-                    tf_input_data, tf_input_labels, tf_keep_probability,
-                    minibatch_data, minibatch_labels, keep_probability)
+                    tf_input_data, tf_input_labels, tf_LSTMs_keep_probability, tf_MLP_keep_probability,
+                    minibatch_data, minibatch_labels, LSTMs_keep_probability, MLP_keep_probability)
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
@@ -130,8 +143,8 @@ class RecurrentNeuralNetwork:
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
             validation_feed_dictionary = self.create_feed_dictionary(
-                tf_input_data, tf_input_labels, tf_keep_probability,
-                validation_data, validation_labels, 1.0)
+                tf_input_data, tf_input_labels, tf_LSTMs_keep_probability, tf_MLP_keep_probability,
+                validation_data, validation_labels, 1.0, 1.0)
 
             validation_accuracy = self.compute_predictions_accuracy(
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
@@ -275,11 +288,11 @@ class RecurrentNeuralNetwork:
         weights = dict()
         biases = dict()
 
-        weights['LSMT_1'], biases['LSTM_1'] = \
+        weights['LSTM_1'], biases['LSTM_1'] = \
             self.initializa_weights_and_biases_for_LSTM_cell(input_step_size, LSTMs_state_size[0])
-        weights['LSMT_2'], biases['LSTM_2'] = \
+        weights['LSTM_2'], biases['LSTM_2'] = \
             self.initializa_weights_and_biases_for_LSTM_cell(LSTMs_state_size[0], LSTMs_state_size[1])
-        weights['LSMT_3'], biases['LSTM_3'] = \
+        weights['LSTM_3'], biases['LSTM_3'] = \
             self.initializa_weights_and_biases_for_LSTM_cell(LSTMs_state_size[1], LSTMs_state_size[2])
 
         weights['MLP'], biases['MLP'] = self.initialize_weights_and_biases_for_MLP(
@@ -381,7 +394,7 @@ class RecurrentNeuralNetwork:
         return logits
 
     def inference(self, input_data, input_sequence_length, input_step_size, weights, biases, outputs, cell_states,
-                  keep_probability):
+                  LSTMs_keep_probability, MLP_keep_probability):
         """
         The recurrent neural network processes the epigenetics data as a sequence of gene expressions.
 
@@ -411,22 +424,22 @@ class RecurrentNeuralNetwork:
 
         for current_input in input_data:
             LSTM_1_output, LSTM_1_cell_state = \
-                self.lstm(current_input, LSTM_1_output, LSTM_1_cell_state, weights['LSMT_1'], biases['LSTM_1'])
-            # LSTM_1_output = tf.nn.dropout(LSTM_1_output, keep_probability)
+                self.lstm(current_input, LSTM_1_output, LSTM_1_cell_state, weights['LSTM_1'], biases['LSTM_1'])
+            LSTM_1_output = tf.nn.dropout(LSTM_1_output, LSTMs_keep_probability)
 
-            # mean, variance = tf.nn.moments(LSTM_1_output, [0])
-            # LSTM_1_output = tf.nn.batch_normalization(LSTM_1_output, mean, variance, None, None, epsilon)
+            #mean, variance = tf.nn.moments(LSTM_1_output, [0])
+            #LSTM_1_output = tf.nn.batch_normalization(LSTM_1_output, mean, variance, None, None, epsilon)
 
             LSTM_2_output, LSTM_2_cell_state = \
-                self.lstm(LSTM_1_output, LSTM_2_output, LSTM_2_cell_state, weights['LSMT_2'], biases['LSTM_2'])
+                self.lstm(LSTM_1_output, LSTM_2_output, LSTM_2_cell_state, weights['LSTM_2'], biases['LSTM_2'])
 
-            # LSTM_2_output = tf.nn.dropout(LSTM_2_output, keep_probability)
+            LSTM_2_output = tf.nn.dropout(LSTM_2_output, LSTMs_keep_probability)
 
-            # mean, variance = tf.nn.moments(LSTM_2_output, [0])
-            # LSTM_2_output = tf.nn.batch_normalization(LSTM_2_output, mean, variance, None, None, epsilon)
+            #mean, variance = tf.nn.moments(LSTM_2_output, [0])
+            #LSTM_2_output = tf.nn.batch_normalization(LSTM_2_output, mean, variance, None, None, epsilon)
 
             LSTM_3_output, LSTM_3_cell_state = \
-                self.lstm(LSTM_2_output, LSTM_3_output, LSTM_3_cell_state, weights['LSMT_3'], biases['LSTM_3'])
+                self.lstm(LSTM_2_output, LSTM_3_output, LSTM_3_cell_state, weights['LSTM_3'], biases['LSTM_3'])
 
             RNN_outputs.append(LSTM_3_output)
 
@@ -436,12 +449,13 @@ class RecurrentNeuralNetwork:
         MLP_input = tf.nn.batch_normalization(MLP_input, mean, variance, None, None, epsilon)
 
         # Multilayer perceptron network
-        logits = self.MLP_inference(MLP_input, weights['MLP'], biases['MLP'], keep_probability)
+        logits = self.MLP_inference(MLP_input, weights['MLP'], biases['MLP'], MLP_keep_probability)
 
         return logits
 
     def create_feed_dictionary(self,
-            placeholder_data, placeholder_labels, placeholder_keep_probability, data, labels, keep_probability):
+            placeholder_data, placeholder_labels, placeholder_LSTMs_keep_probability, placeholder_MLP_keep_probability,
+            data, labels, LSTMs_keep_probability, MLP_keep_probability):
         """
         :param placeholder_data:
         :param placeholder_labels:
@@ -454,7 +468,8 @@ class RecurrentNeuralNetwork:
         feed_dictionary = {
             placeholder_data: data,
             placeholder_labels: labels,
-            placeholder_keep_probability: keep_probability
+            placeholder_LSTMs_keep_probability: LSTMs_keep_probability,
+            placeholder_MLP_keep_probability: MLP_keep_probability
         }
 
         return feed_dictionary
@@ -466,13 +481,41 @@ class RecurrentNeuralNetwork:
         :return:
         """
         cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
-        L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
+        MLP_L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
                   tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer']) + \
                   tf.nn.l2_loss(weights['MLP']['MLP_second_hidden_layer']) + \
                   tf.nn.l2_loss(weights['MLP']['MLP_third_hidden_layer']) + \
                   tf.nn.l2_loss(weights['MLP']['MLP_forth_hidden_layer'])
 
-        loss = tf.reduce_mean(cross_entropy + weight_decay * L2_loss)
+        LSTM_1_L2_loss = tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_cW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_pW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_cW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_pW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_cW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_pW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_cW']) + \
+                        tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_pW'])
+
+        LSTM_2_L2_loss = tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_pW'])
+
+        LSTM_3_L2_loss = tf.nn.l2_loss(weights['LSTM_3']['LSTM_input_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_input_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_forget_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_forget_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_memory_cell_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_memory_cell_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_output_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_3']['LSTM_output_pW'])
+
+        loss = tf.reduce_mean(
+            cross_entropy + weight_decay * (LSTM_1_L2_loss + LSTM_2_L2_loss + LSTM_3_L2_loss))
 
         return loss
 

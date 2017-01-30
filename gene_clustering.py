@@ -39,7 +39,6 @@ def hierarchical_clustering(gene_id_to_expression_profile, min_num_clusters):
     while(num_clusters > min_num_clusters):
         min_index, max_index = find_closest_clusters(distance_matrix)
 
-
         # update distance matrix
         min_cluster_size = len(clusters[min_index])
         max_cluster_size = len(clusters[max_index])

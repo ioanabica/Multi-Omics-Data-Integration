@@ -20,10 +20,12 @@ input_data_size = epigeneticsData.input_data_size
 output_size = epigeneticsData.output_size
 
 keys = k_fold_datasets.keys()
-validation_accuracy = []
+validation_accuracy = list()
 
 ffnn = FeedforwardNeuralNetwork(input_data_size, [256, 128, 64, 32], output_size)
-rnn = RecurrentNeuralNetwork(input_data_size/16, 16, [64, 128, 256], [512, 256, 128, 32], output_size)
+#rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [128, 256, 512], [512, 256, 128, 32], output_size)
+
+rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [64, 128, 256], [512, 256, 128, 32], output_size)
 
 
 for key in keys:
@@ -36,7 +38,7 @@ for key in keys:
 
     accuracy = rnn.train_and_validate(
         training_dataset, validation_dataset)
-    validation_accuracy += accuracy
+    validation_accuracy.append(accuracy)
 
 
 print validation_accuracy
