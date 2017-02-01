@@ -6,8 +6,6 @@ from feedforward_neural_network import FeedforwardNeuralNetwork
 from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from superlayered_neural_network import SuperlayeredNeuralNetwork
 
-from LSTM_for_testing import RecurrentNeuralNetwork
-
 
 keep_probability = 0.5
 epsilon = 1e-3
@@ -33,9 +31,8 @@ ffnn = FeedforwardNeuralNetwork(input_data_size, [256, 128, 64, 32], output_size
 
 #rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [16, 32, 64, 128], [256, 128, 64, 32], output_size)
 
-rnn = RecurrentNeuralNetwork(16, 8, [32, 64], [256, 128, 64, 32], output_size)
+rnn = RecurrentNeuralNetwork(32, 8, [128, 256], [128, 64], output_size)
 
-"""
 for key in keys:
     print "key number" + str(key)
     training_dataset = k_fold_datasets[key]["training_dataset"]
@@ -50,9 +47,10 @@ for key in keys:
         training_dataset, validation_dataset)
     validation_accuracy.append(accuracy)
 
+print validation_accuracy
+print numpy.mean(validation_accuracy)
+
 """
-
-
 
 
 for key in keys:
@@ -81,6 +79,7 @@ print validation_accuracy
 print numpy.mean(validation_accuracy)
 
 
+"""
 """
 
 epigeneticsData = EpigeneticsData()

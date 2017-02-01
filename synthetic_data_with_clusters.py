@@ -11,8 +11,8 @@ num_shifted_genes = 16
 training_examples_for_class = 10
 validation_examples_for_class = 2
 
-cluster_1_num_genes = 32
-cluster_2_num_genes = 32
+cluster_1_num_genes = 256
+cluster_2_num_genes = 256
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -44,7 +44,7 @@ def normalize_data(data_point):
 def create_data_point(class_id, class_id_to_shifted_genes, num_genes, mean):
     stddev = 1
     data_point = np.random.normal(mean, stddev, num_genes)
-    shifted_mean = 3
+    shifted_mean = 1
     #print data_point
 
     shifted_genes = class_id_to_shifted_genes[class_id]
@@ -128,11 +128,6 @@ def create_validation_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_
 
             validation_labels[class_id * validation_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
-
-    print cluster_1_validation_data
-    print cluster_2_validation_data
-    print validation_labels
-
     validation_dataset["validation_data"][0] = cluster_1_validation_data
     validation_dataset["validation_data"][1] = cluster_2_validation_data
     validation_dataset["validation_labels"] = validation_labels
@@ -193,7 +188,6 @@ def create_cluster_id_to_class_id_to_gene_expressions_mean_value(num_clusters, n
             class_id_gene_expressions_mean_value[class_index] = np.random.random_integers(0, 60)
         cluster_id_to_class_id_to_gene_expression_mean_value[cluster_index] = class_id_gene_expressions_mean_value
 
-    print cluster_id_to_class_id_to_gene_expression_mean_value
     return cluster_id_to_class_id_to_gene_expression_mean_value
 
 
@@ -234,13 +228,12 @@ class SyntheticDataWithClusters(object):
 
 
     gene_id_to_cluster_id, clusters = hierarchical_clustering(data_for_clustering, 2)
-    print gene_id_to_cluster_id
     print clusters
 
 
     superlayered_nn = SuperlayeredNeuralNetwork(
         [cluster_1_num_genes, cluster_2_num_genes],
-        [[256, 128, 64, 32], [256, 128, 64, 32]],
+        [[512, 256, 128, 64], [512, 256, 128, 64]],
         [128, 32],
         num_classes)
 

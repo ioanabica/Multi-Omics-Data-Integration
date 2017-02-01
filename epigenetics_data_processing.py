@@ -5,8 +5,8 @@ from epigenetics_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
 """ To obtain a cluster with 128 genes set gene_entropy_treshold = 6.1 and max_num_genes = 250"""
-gene_entropy_threshold = 6.1
-max_num_genes = 250
+gene_entropy_threshold = 6.2
+max_num_genes = 256
 # Number of k folds
 k = 6
 

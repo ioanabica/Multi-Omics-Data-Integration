@@ -3,11 +3,12 @@ import math
 
 from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from feedforward_neural_network import FeedforwardNeuralNetwork
-from LSTM_for_testing import  RecurrentNeuralNetwork
+
+
 
 num_classes = 7
-num_genes = 64
-num_shifted_genes = 8
+num_genes = 256
+num_shifted_genes = 32
 training_examples_for_class = 10
 validation_examples_for_class = 2
 
@@ -158,10 +159,10 @@ class SyntheticData(object):
 
     # rnn = RecurrentNeuralNetwork(num_genes/8, 8, [32, 64, 128, 256], [256, 128, 64, 32], num_classes)
 
-    #rnn = RecurrentNeuralNetwork(num_genes/4, 4, [16, 32, 64, 128], [256, 128, 64, 32], num_classes)
+    #rnn = RecurrentNeuralNetwork(16, 8, [32, 64, 64, 128], [128, 64], num_classes)
 
-    rnn = RecurrentNeuralNetwork(num_genes / 4, 4, [64, 128], [256, 128, 64, 32], num_classes)
-    print str(4) + str([32, 64]) + str([128, 64, 32, 16])
+    rnn = RecurrentNeuralNetwork(32, 8, [128, 256], [128, 64], num_classes)
+
 
     validation_accuracy = rnn.train_and_validate(training_dataset, validation_dataset)
 
