@@ -14,16 +14,17 @@ import tensorflow as tf
 # hidden_units_4 = 32
 
 MLP_keep_probability = 0.5
-LSTMs_keep_probability = 0.9
+LSTMs_keep_probability = 0.5
 
 # Training parameters
 learning_rate = 0.0001
-weight_decay = 0.02
+weight_decay = 0.05
 batch_size = 16
 
 epsilon = 1e-3
 
-class RecurrentNeuralNetwork:
+
+class RecurrentNeuralNetwork(object):
 
     def __init__(self, input_sequence_length, input_step_size, LSTMs_state_size, hidden_units, output_size):
         self.input_sequence_length = input_sequence_length
@@ -101,6 +102,8 @@ class RecurrentNeuralNetwork:
             print("Training RNN")
             print(learning_rate)
             print(weight_decay)
+            print MLP_keep_probability
+            print LSTMs_keep_probability
             training_predictions = tf.nn.softmax(logits)
 
             # initialize the output and cell_state for the LSTM cells for validation
@@ -115,7 +118,7 @@ class RecurrentNeuralNetwork:
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 9000
+        steps = 25000
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
@@ -188,9 +191,11 @@ class RecurrentNeuralNetwork:
                          compute_uv=True, full_matrices=False)
         memory_cell_cW = tf.Variable(tf.reshape(v, [input_size, num_units]))
 
-        s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
-                         compute_uv=True, full_matrices=False)
-        memory_cell_pW = tf.Variable(u)
+
+        #s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
+         #                compute_uv=True, full_matrices=False)
+        """ Initialize weights for hidden to hidden connections as an identity matrix"""
+        memory_cell_pW = tf.Variable(tf.diag(tf.ones(num_units)))
 
         weights['LSTM_memory_cell_cW'] = memory_cell_cW
         weights['LSTM_memory_cell_pW'] = memory_cell_pW
@@ -294,9 +299,11 @@ class RecurrentNeuralNetwork:
             self.initializa_weights_and_biases_for_LSTM_cell(LSTMs_state_size[0], LSTMs_state_size[1])
         weights['LSTM_3'], biases['LSTM_3'] = \
             self.initializa_weights_and_biases_for_LSTM_cell(LSTMs_state_size[1], LSTMs_state_size[2])
+        weights['LSTM_4'], biases['LSTM_4'] = \
+            self.initializa_weights_and_biases_for_LSTM_cell(LSTMs_state_size[2], LSTMs_state_size[3])
 
         weights['MLP'], biases['MLP'] = self.initialize_weights_and_biases_for_MLP(
-            LSTMs_state_size[2], hidden_units, output_size)
+            LSTMs_state_size[3], hidden_units, output_size)
 
         return weights, biases
 
@@ -305,6 +312,7 @@ class RecurrentNeuralNetwork:
         num_units_1 = LSTMs_state_size[0]
         num_units_2 = LSTMs_state_size[1]
         num_units_3 = LSTMs_state_size[2]
+        num_units_4 = LSTMs_state_size[3]
 
         initial_LSTM_outputs = dict()
         initial_LSTM_cell_states = dict()
@@ -317,6 +325,10 @@ class RecurrentNeuralNetwork:
 
         initial_LSTM_outputs['LSTM_3'] = tf.Variable(tf.zeros([batch_size, num_units_3]), trainable=False)
         initial_LSTM_cell_states['LSTM_3'] = tf.Variable(tf.zeros([batch_size, num_units_3]), trainable=False)
+
+        initial_LSTM_outputs['LSTM_4'] = tf.Variable(tf.zeros([batch_size, num_units_4]), trainable=False)
+        initial_LSTM_cell_states['LSTM_4'] = tf.Variable(tf.zeros([batch_size, num_units_4]), trainable=False)
+
 
         return initial_LSTM_outputs, initial_LSTM_cell_states
 
@@ -422,26 +434,51 @@ class RecurrentNeuralNetwork:
         LSTM_3_output = outputs['LSTM_3']
         LSTM_3_cell_state = cell_states['LSTM_3']
 
+        LSTM_4_output = outputs['LSTM_4']
+        LSTM_4_cell_state = cell_states['LSTM_4']
+
         for current_input in input_data:
             LSTM_1_output, LSTM_1_cell_state = \
-                self.lstm(current_input, LSTM_1_output, LSTM_1_cell_state, weights['LSTM_1'], biases['LSTM_1'])
-            LSTM_1_output = tf.nn.dropout(LSTM_1_output, LSTMs_keep_probability)
+                self.lstm(current_input,
+                          LSTM_1_output,
+                          LSTM_1_cell_state,
+                          weights['LSTM_1'],
+                          biases['LSTM_1'])
 
-            #mean, variance = tf.nn.moments(LSTM_1_output, [0])
-            #LSTM_1_output = tf.nn.batch_normalization(LSTM_1_output, mean, variance, None, None, epsilon)
+            mean, variance = tf.nn.moments(LSTM_1_output, [0])
+            LSTM_2_input = tf.nn.dropout(
+                tf.nn.batch_normalization(LSTM_1_output, mean, variance, None, None, epsilon), LSTMs_keep_probability)
 
-            LSTM_2_output, LSTM_2_cell_state = \
-                self.lstm(LSTM_1_output, LSTM_2_output, LSTM_2_cell_state, weights['LSTM_2'], biases['LSTM_2'])
+            LSTM_2_output, LSTM_2_cell_state = self.lstm(
+                LSTM_2_input,
+                LSTM_2_output,
+                LSTM_2_cell_state,
+                weights['LSTM_2'],
+                biases['LSTM_2'])
 
-            LSTM_2_output = tf.nn.dropout(LSTM_2_output, LSTMs_keep_probability)
+            mean, variance = tf.nn.moments(LSTM_2_output, [0])
+            LSTM_3_input = tf.nn.dropout(
+                tf.nn.batch_normalization(LSTM_2_output, mean, variance, None, None, epsilon), LSTMs_keep_probability)
 
-            #mean, variance = tf.nn.moments(LSTM_2_output, [0])
-            #LSTM_2_output = tf.nn.batch_normalization(LSTM_2_output, mean, variance, None, None, epsilon)
+            LSTM_3_output, LSTM_3_cell_state = self.lstm(
+                LSTM_3_input,
+                LSTM_3_output,
+                LSTM_3_cell_state,
+                weights['LSTM_3'],
+                biases['LSTM_3'])
 
-            LSTM_3_output, LSTM_3_cell_state = \
-                self.lstm(LSTM_2_output, LSTM_3_output, LSTM_3_cell_state, weights['LSTM_3'], biases['LSTM_3'])
+            mean, variance = tf.nn.moments(LSTM_3_output, [0])
+            LSTM_4_input = tf.nn.dropout(
+                tf.nn.batch_normalization(LSTM_3_output, mean, variance, None, None, epsilon), LSTMs_keep_probability)
 
-            RNN_outputs.append(LSTM_3_output)
+            LSTM_4_output, LSTM_4_cell_state = self.lstm(
+                LSTM_4_input,
+                LSTM_4_output,
+                LSTM_4_cell_state,
+                weights['LSTM_4'],
+                biases['LSTM_4'])
+
+            RNN_outputs.append(LSTM_4_output)
 
         MLP_input = RNN_outputs[-1]
 
@@ -514,8 +551,18 @@ class RecurrentNeuralNetwork:
                          tf.nn.l2_loss(weights['LSTM_3']['LSTM_output_cW']) + \
                          tf.nn.l2_loss(weights['LSTM_3']['LSTM_output_pW'])
 
+        LSTM_4_L2_loss = tf.nn.l2_loss(weights['LSTM_4']['LSTM_input_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_input_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_forget_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_forget_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_memory_cell_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_memory_cell_pW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_output_cW']) + \
+                         tf.nn.l2_loss(weights['LSTM_4']['LSTM_output_pW'])
+
         loss = tf.reduce_mean(
-            cross_entropy + weight_decay * (LSTM_1_L2_loss + LSTM_2_L2_loss + LSTM_3_L2_loss))
+            cross_entropy + weight_decay * (
+                MLP_L2_loss + LSTM_1_L2_loss + LSTM_2_L2_loss + LSTM_3_L2_loss + LSTM_4_L2_loss))
 
         return loss
 

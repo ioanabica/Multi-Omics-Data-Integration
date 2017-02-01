@@ -5,16 +5,16 @@ import tensorflow as tf
 # Hyperparameters
 
 # first superlayer
-s1_hidden_units_1 = 512
-s1_hidden_units_2 = 256
-s1_hidden_units_3 = 128
-s1_hidden_units_4 = 64
+#s1_hidden_units_1 = 512
+#s1_hidden_units_2 = 256
+#s1_hidden_units_3 = 128
+#s1_hidden_units_4 = 64
 
 # second superlayer
-s2_hidden_units_1 = 512
-s2_hidden_units_2 = 256
-s2_hidden_units_3 = 128
-s2_hidden_units_4 = 64
+#s2_hidden_units_1 = 512
+#s2_hidden_units_2 = 256
+#s2_hidden_units_3 = 128
+#s2_hidden_units_4 = 64
 
 merge_layer_size_1 = 128
 merge_layer_size_2 = 32
@@ -322,88 +322,98 @@ def compute_predictions_accuracy(predictions, labels):
     return (100 * num_correct_labels)/predictions.shape[0]
 
 
-def train_superlayered_neural_network(training_dataset, validation_dataset, clusters_size, output_size):
-    """
-    Train the feed forward neural network using gradient descent by trying to minimize the loss.
-    This function is used for cross validation.
 
-    :param training_dataset: dictionary containing the training data and training labels
-    :param validation_dataset: dictionary containing the validation data and validation labels
-    :param input_data_size: the size of the input to the neural network
-    :param output_size: the number of labels in the output
-    :return: the validation accuracy of the model
-    """
+class SuperlayeredNeuralNetwork(object):
 
-    s1_training_data = training_dataset['training_data'][0]
-    s2_training_data = training_dataset['training_data'][1]
-    training_labels = training_dataset["training_labels"]
+    def __init__(self, clusters_size, superlayers_hidden_units, merge_layers_size, output_size):
+        self.clusters_size = clusters_size
+        self.superlayers_hidden_units = superlayers_hidden_units
+        self.merge_layers_size = merge_layers_size
+        self.output_size = output_size
 
-    s1_validation_data = validation_dataset['validation_data'][0]
-    s2_validation_data = validation_dataset['validation_data'][1]
-    validation_labels = validation_dataset["validation_labels"]
+    def train_and_validate(self, training_dataset, validation_dataset):
+        """
+        Train the feed forward neural network using gradient descent by trying to minimize the loss.
+        This function is used for cross validation.
 
+        :param training_dataset: dictionary containing the training data and training labels
+        :param validation_dataset: dictionary containing the validation data and validation labels
+        :return: the validation accuracy of the model
+        """
 
-    graph = tf.Graph()
-    with graph.as_default():
+        s1_training_data = training_dataset['training_data'][0]
+        s2_training_data = training_dataset['training_data'][1]
+        training_labels = training_dataset["training_labels"]
 
-        # create placeholders for input tensors
-        tf_s1_input_data = tf.placeholder(tf.float32, shape=(None, clusters_size[0]))
-        tf_s2_input_data = tf.placeholder(tf.float32, shape=(None, clusters_size[1]))
+        s1_validation_data = validation_dataset['validation_data'][0]
+        s2_validation_data = validation_dataset['validation_data'][1]
+        validation_labels = validation_dataset["validation_labels"]
 
-        tf_output_labels = tf.placeholder(tf.float32, shape=(None, output_size))
+        graph = tf.Graph()
+        with graph.as_default():
 
-        # create placeholder for the keep probability
-        # dropout is used during training, but not during testing
-        tf_keep_probability = tf.placeholder(tf.float32)
+            # create placeholders for input tensors
+            tf_s1_input_data = tf.placeholder(tf.float32, shape=(None, self.clusters_size[0]))
+            tf_s2_input_data = tf.placeholder(tf.float32, shape=(None, self.clusters_size[1]))
 
-        s1_hidden_units = [s1_hidden_units_1, s1_hidden_units_2, s1_hidden_units_3, s1_hidden_units_4]
-        s2_hidden_units = [s2_hidden_units_1, s2_hidden_units_2, s2_hidden_units_3, s2_hidden_units_4]
+            tf_output_labels = tf.placeholder(tf.float32, shape=(None, self.output_size))
 
-        weights, biases = initialize_weights_and_biases_for_superlayered_network(
-            clusters_size, s1_hidden_units, s2_hidden_units, merge_layer_size_1, merge_layer_size_2, output_size)
+            # create placeholder for the keep probability
+            # dropout is used during training, but not during testing
+            tf_keep_probability = tf.placeholder(tf.float32)
 
-        logits = inference(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
-        training_loss = compute_loss(logits, tf_output_labels, weights)
+            s1_hidden_units = self.superlayers_hidden_units[0]
+            s2_hidden_units = self.superlayers_hidden_units[1]
+            merge_layer_size_1 = self.merge_layers_size[0]
+            merge_layer_size_2 = self.merge_layers_size[1]
 
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
+            weights, biases = initialize_weights_and_biases_for_superlayered_network(
+                self.clusters_size,
+                s1_hidden_units, s2_hidden_units,
+                merge_layer_size_1, merge_layer_size_2,
+                self.output_size)
 
-        training_predictions = tf.nn.softmax(logits)
-        validation_predictions = tf.nn.softmax(inference(
-            s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
+            logits = inference(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
+            training_loss = compute_loss(logits, tf_output_labels, weights)
 
-    steps = 9000
-    with tf.Session(graph=graph) as session:
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
-        # initialize weights and biases
-        tf.initialize_all_variables().run()
+            training_predictions = tf.nn.softmax(logits)
+            validation_predictions = tf.nn.softmax(inference(
+                s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
-        for step in range(steps):
+        steps = 8000
+        with tf.Session(graph=graph) as session:
 
-            offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
+            # initialize weights and biases
+            tf.initialize_all_variables().run()
 
-            """ Create a training minibatch for each superlayer. """
-            s1_minibatch_data = s1_training_data[offset:(offset + batch_size), :]
-            s2_minibatch_data = s2_training_data[offset:(offset + batch_size), :]
+            for step in range(steps):
 
-            minibatch_labels = training_labels[offset:(offset + batch_size), :]
+                offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
 
-            feed_dictionary = create_feed_dictionary(
+                """ Create a training minibatch for each superlayer. """
+                s1_minibatch_data = s1_training_data[offset:(offset + batch_size), :]
+                s2_minibatch_data = s2_training_data[offset:(offset + batch_size), :]
+
+                minibatch_labels = training_labels[offset:(offset + batch_size), :]
+
+                feed_dictionary = create_feed_dictionary(
+                    tf_s1_input_data, tf_s2_input_data, tf_output_labels, tf_keep_probability,
+                    s1_minibatch_data, s2_minibatch_data, minibatch_labels, keep_probability)
+
+                _, loss, predictions = session.run(
+                    [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
+
+                if (step % 500 == 0):
+                    print('Minibatch loss at step %d: %f' % (step, loss))
+                    print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
+
+            validation_feed_dictionary = create_feed_dictionary(
                 tf_s1_input_data, tf_s2_input_data, tf_output_labels, tf_keep_probability,
-                s1_minibatch_data, s2_minibatch_data, minibatch_labels, keep_probability)
+                s1_validation_data, s2_validation_data, validation_labels, 1.0)
+            validation_accuracy = compute_predictions_accuracy(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
-            _, loss, predictions = session.run(
-                [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
-
-            if (step % 500 == 0):
-                print('Minibatch loss at step %d: %f' % (step, loss))
-                print('Minibatch accuracy: %.1f%%' % compute_predictions_accuracy(predictions, minibatch_labels))
-
-        validation_feed_dictionary = create_feed_dictionary(
-            tf_s1_input_data, tf_s2_input_data, tf_output_labels, tf_keep_probability,
-            s1_validation_data, s2_validation_data, validation_labels, 1.0)
-        validation_accuracy = compute_predictions_accuracy(
-                  validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
-
-        print('Validation accuracy: %.1f%%' % validation_accuracy)
-        return validation_accuracy
-
+            print('Validation accuracy: %.1f%%' % validation_accuracy)
+            return validation_accuracy

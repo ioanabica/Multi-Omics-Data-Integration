@@ -3,12 +3,13 @@ import math
 
 from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from feedforward_neural_network import FeedforwardNeuralNetwork
+from LSTM_for_testing import  RecurrentNeuralNetwork
 
 num_classes = 7
-num_genes = 256
-num_shifted_genes = 16
+num_genes = 64
+num_shifted_genes = 8
 training_examples_for_class = 10
-validation_examples_for_class = 3
+validation_examples_for_class = 2
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -127,8 +128,6 @@ def create_validation_dataset(class_id_to_shifted_genes):
     return validation_dataset
 
 
-# create synthetic data for clustering
-
 def create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes):
 
     class_id_to_shifted_genes = dict()
@@ -154,7 +153,15 @@ class SyntheticData(object):
 
     #rnn = RecurrentNeuralNetwork(num_genes/8, 8, [64, 128, 256], [512, 256, 128, 32], num_classes)
 
-    rnn = RecurrentNeuralNetwork(num_genes/8, 8, [64, 256, 512], [512, 256, 128, 32], num_classes)
+    # rnn = RecurrentNeuralNetwork(num_genes/4, 4, [64, 128, 256], [512, 256, 128, 32], num_classes)
+    # rnn = RecurrentNeuralNetwork(num_genes/8, 8, [32, 64, 128], [256, 128, 64, 32], num_classes)
+
+    # rnn = RecurrentNeuralNetwork(num_genes/8, 8, [32, 64, 128, 256], [256, 128, 64, 32], num_classes)
+
+    #rnn = RecurrentNeuralNetwork(num_genes/4, 4, [16, 32, 64, 128], [256, 128, 64, 32], num_classes)
+
+    rnn = RecurrentNeuralNetwork(num_genes / 4, 4, [64, 128], [256, 128, 64, 32], num_classes)
+    print str(4) + str([32, 64]) + str([128, 64, 32, 16])
 
     validation_accuracy = rnn.train_and_validate(training_dataset, validation_dataset)
 

@@ -19,7 +19,7 @@ batch_size = 16
 logs_path = '/tmp/tensorboard'
 
 
-class FeedforwardNeuralNetwork:
+class FeedforwardNeuralNetwork(object):
 
     def __init__(self, input_data_size, hidden_units, output_size):
         self.input_data_size = input_data_size
@@ -100,8 +100,8 @@ class FeedforwardNeuralNetwork:
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
-            plt.plot(range(steps), losses)
-            plt.show()
+            #plt.plot(range(steps), losses)
+            #plt.show()
 
             validation_feed_dictionary = self.create_feed_dictionary(
                 tf_input_data, tf_input_labels, tf_keep_probability,

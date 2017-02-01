@@ -4,10 +4,11 @@ from gene_clustering import hierarchical_clustering
 from epigenetics_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
-gene_entropy_threshold = 6.0
-max_num_genes = 512
+""" To obtain a cluster with 128 genes set gene_entropy_treshold = 6.1 and max_num_genes = 250"""
+gene_entropy_threshold = 6.1
+max_num_genes = 250
 # Number of k folds
-k = 7
+k = 6
 
 
 def compute_gene_entropy(gene_expressions):
@@ -179,6 +180,7 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
         for cluster_id in range(max_cluster_id):
             embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = []
 
+
     for line in data_file:
         line_elements = line.split()
         if (line_elements[0] in gene_ids) & (len(line_elements) == len(embryo_ids) + 1):
@@ -275,7 +277,7 @@ class EpigeneticsData(object):
         gene_expressions_file, geneId_to_gene_entropy, gene_entropy_threshold, max_num_genes)
 
     gene_expressions_file.seek(0)
-    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 500)
+    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 2)
     embryo_id_to_gene_expressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
         gene_expressions_file, gene_id_to_gene_cluster)
 
@@ -287,6 +289,7 @@ class EpigeneticsData(object):
 
     clusters_size = compute_clusters_size(gene_clusters)
     print clusters_size
+
 
     embryo_stages = embryo_stage_to_embryo_ids.keys()
     embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
