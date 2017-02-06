@@ -1,14 +1,15 @@
 import math
 import numpy as np
 from gene_clustering import hierarchical_clustering
-from epigenetics_datasets import *
+from epigenetic_data import EpigeneticData
+from embryo_development_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
 """ To obtain a cluster with 128 genes set gene_entropy_treshold = 6.1 and max_num_genes = 250"""
-gene_entropy_threshold = 6.2
-max_num_genes = 256
+#gene_entropy_threshold = 6.2
+#max_num_genes = 256
 # Number of k folds
-k = 6
+#k = 6
 
 
 def compute_gene_entropy(gene_expressions):
@@ -32,44 +33,32 @@ def compute_gene_entropy(gene_expressions):
     return gene_entropy
 
 
-def extract_embryo_id_to_embryo_stage(data_file):
+def extract_data_from_embryo_stage_file(data_file):
     """
-    Create a dictionary from an embryo_id to the corresponding development stage.
+    Create one dictionary from an embryo_id to the corresponding development stage.
+    Create another dictionary that maps the embryo development stage to a list of corresponding embryo_ids
+    whose gene expression profile was measured at this stage.
     The data is extracted from the input file.
 
     :param (file) data_file
     :return (dictionary): embryo_id_to_embryo_stage
     """
+
     embryo_id_to_embryo_stage = dict()
+    embryo_stage_to_embryo_ids = dict()
+
     data_file.readline()
     for line in data_file:
         line_elements = line.split()
         embryo_id_to_embryo_stage[line_elements[0]] = line_elements[1]
-    return embryo_id_to_embryo_stage
-
-
-def extract_embryo_stage_to_embryo_ids(data_file):
-    """
-    Create a dictionary that maps the embryo development stage to a list of corresponding embryo_ids
-    whose gene expression profile was measured at this stage.
-    The data is extracted from the input file.
-
-    :param (file) data_file
-    :return (dictionary): embryo_stage_to_embryo_ids
-    """
-
-    embryo_stage_to_embryo_ids = dict()
-    data_file.readline()
-    for line in data_file:
-        line_elements = line.split()
         if line_elements[1] in embryo_stage_to_embryo_ids.keys():
             embryo_stage_to_embryo_ids[line_elements[1]] += [line_elements[0]]
         else:
             embryo_stage_to_embryo_ids[line_elements[1]] = [line_elements[0]]
-    return embryo_stage_to_embryo_ids
+    return embryo_id_to_embryo_stage, embryo_stage_to_embryo_ids
 
 
-def extract_gene_id_to_gene_entropy_and_expression_profile(data_file):
+def extract_gene_id_to_gene_entropy_and_expression_profile(data_file, gene_entropy_threshold, max_num_genes):
     """
     Creates two dictionaries: one dictionary that maps the gene_id to its corresponding gene entropy and
                              one dictionary that maps the gene_id to its corresponding expression_profile
@@ -256,83 +245,4 @@ def extract_training_validation_test_embryo_ids(embryo_stage_to_embryo_ids):
     return training_embryo_ids, validation_embryo_ids, test_embryo_ids
 
 
-"""
-Class that extracts the data to perform supervised learning using the neural network architectures.
-"""
-
-class EpigeneticsData(object):
-
-    gene_expressions_file = open('data/epigenetics_data/human_early_embryo_gene_expression.txt', 'r')
-    embryo_stage_file = open('data/epigenetics_data/human_early_embryo_stage.txt', 'r')
-
-    embryo_id_to_embryo_stage = extract_embryo_id_to_embryo_stage(embryo_stage_file)
-    embryo_stage_file.seek(0)
-    embryo_stage_to_embryo_ids = extract_embryo_stage_to_embryo_ids(embryo_stage_file)
-
-    geneId_to_gene_entropy, geneId_to_expressionProfile = \
-        extract_gene_id_to_gene_entropy_and_expression_profile(gene_expressions_file)
-
-    gene_expressions_file.seek(0)
-    embryo_id_to_gene_expressions = extract_embryo_id_to_gene_expressions(
-        gene_expressions_file, geneId_to_gene_entropy, gene_entropy_threshold, max_num_genes)
-
-    gene_expressions_file.seek(0)
-    gene_id_to_gene_cluster, gene_clusters = hierarchical_clustering(geneId_to_expressionProfile, 2)
-    embryo_id_to_gene_expressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
-        gene_expressions_file, gene_id_to_gene_cluster)
-
-    gene_expressions_file.close()
-    embryo_stage_file.close()
-
-    embryoIds = embryo_id_to_embryo_stage.keys()
-    input_data_size = len(embryo_id_to_gene_expressions[embryoIds[0]])
-
-    clusters_size = compute_clusters_size(gene_clusters)
-    print clusters_size
-
-
-    embryo_stages = embryo_stage_to_embryo_ids.keys()
-    embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
-    output_size = len(embryo_stages)
-
-    training_embryoIds, validation_embryoIds, test_embryoIds = \
-        extract_training_validation_test_embryo_ids(embryo_stage_to_embryo_ids)
-
-    training_embryoIds += test_embryoIds
-
-    training_dataset = create_training_dataset(
-        training_embryoIds, input_data_size, output_size,
-        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-    training_dataset_cluster = create_training_dataset_with_clusters(
-        training_embryoIds, clusters_size, output_size,
-        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-    #print training_dataset_cluster
-
-    validation_dataset = create_validation_dataset(
-        validation_embryoIds, input_data_size, output_size,
-        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-    validation_dataset_clusters = create_validation_dataset_with_clusters(
-        validation_embryoIds, clusters_size, output_size,
-        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-    #print validation_dataset_clusters
-
-
-    test_dataset = create_test_dataset(
-        test_embryoIds, input_data_size, output_size,
-        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-    k_fold_embryoIds = create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids)
-
-    k_fold_datasets = create_k_fold_datasets(
-        k, k_fold_embryoIds, input_data_size, output_size,
-        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
-
-
-    k_fold_datasets_with_clusters = create_k_fold_datasets_with_clusters(
-        k, k_fold_embryoIds, clusters_size, output_size,
-        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage)
 

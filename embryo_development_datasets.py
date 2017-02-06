@@ -168,42 +168,6 @@ def create_validation_dataset_with_clusters(
     return validation_dataset
 
 
-
-def create_test_dataset(
-        test_embryoIds, input_data_size, output_size,
-        embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage):
-
-    """
-
-    :param (list) test_embryoIds:
-    :param (integer) input_data_size:
-    :param (integer) output_size:
-    :param (dictionary) embryo_id_to_gene_expressions:
-    :param (dictionary) embryo_stage_to_one_hot_encoding:
-    :param (dictionary) embryo_id_to_embryo_stage:
-    :return:
-    """
-
-    test_dataset = dict()
-    # create test data
-    test_data = np.ndarray(shape=(len(test_embryoIds), input_data_size),
-                           dtype=np.float32)
-    test_labels = np.ndarray(shape=(len(test_embryoIds), output_size),
-                             dtype=np.float32)
-
-    np.random.shuffle(test_embryoIds)
-    index = 0
-    for embryoId in test_embryoIds:
-        test_data[index, :] = embryo_id_to_gene_expressions[embryoId]
-        test_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
-        index += 1
-
-    test_dataset["test_data"] = test_data
-    test_dataset["test_labels"] = test_labels
-
-    return test_dataset
-
-
 def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
     """
     Separates the embryo_ids into k folds. (k-1) folds will be used to training and one fold for validation.

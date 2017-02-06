@@ -3,12 +3,12 @@ import numpy as np
 import tensorflow as tf
 
 
-MLP_keep_probability = 0.9
-LSTMs_keep_probability = 0.9
+#MLP_keep_probability = 0.8
+#LSTMs_keep_probability = 0.8
 
 # Training parameters
-learning_rate = 0.0001
-weight_decay = 0.001
+#learning_rate = 0.0001
+#weight_decay = 0.001
 batch_size = 16
 
 epsilon = 1e-3
@@ -29,7 +29,14 @@ class RecurrentNeuralNetwork(object):
         print hidden_units
         print output_size
 
-    def train_and_validate(self, training_dataset, validation_dataset):
+    def train_and_validate(
+            self,
+            training_dataset,
+            validation_dataset,
+            learning_rate,
+            weight_decay,
+            LSTMs_keep_probability,
+            MLP_keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
         This function is used for cross validation.
@@ -79,7 +86,7 @@ class RecurrentNeuralNetwork(object):
                 initial_LSTM_outputs, initial_LSTM_cell_states,
                 tf_LSTMs_keep_probability, tf_MLP_keep_probability)
 
-            training_loss = self.compute_loss(logits, tf_input_labels, weights)
+            training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)
 
             # TODO: describe how the AdamOptimizer works
             optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
@@ -114,7 +121,7 @@ class RecurrentNeuralNetwork(object):
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 10000
+        steps = 15000
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
@@ -431,7 +438,7 @@ class RecurrentNeuralNetwork(object):
 
         return feed_dictionary
 
-    def compute_loss(self, logits, labels, weights):
+    def compute_loss(self, logits, labels, weights, weight_decay):
         """
         :param logits:
         :param labels:

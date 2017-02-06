@@ -7,8 +7,8 @@ from feedforward_neural_network import FeedforwardNeuralNetwork
 
 
 num_classes = 7
-num_genes = 256
-num_shifted_genes = 32
+num_genes = 128
+num_shifted_genes = 16
 training_examples_for_class = 10
 validation_examples_for_class = 2
 
@@ -161,7 +161,7 @@ class SyntheticData(object):
 
     #rnn = RecurrentNeuralNetwork(16, 8, [32, 64, 64, 128], [128, 64], num_classes)
 
-    rnn = RecurrentNeuralNetwork(32, 8, [128, 256], [128, 64], num_classes)
+    rnn = RecurrentNeuralNetwork(32, 4, [64, 256], [256, 64], num_classes)
 
 
     validation_accuracy = rnn.train_and_validate(training_dataset, validation_dataset)

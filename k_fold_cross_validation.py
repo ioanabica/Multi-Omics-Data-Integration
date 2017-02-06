@@ -1,5 +1,5 @@
 import numpy
-from epigenetics_data_processing import EpigeneticsData
+from embryo_development_data import EmbryoDevelopmentData
 #from synthetic_data import SyntheticData
 
 from feedforward_neural_network import FeedforwardNeuralNetwork
@@ -14,24 +14,32 @@ epsilon = 1e-3
 learning_rate = 0.05
 weight_decay = 0.01
 
-epigeneticsData = EpigeneticsData()
-k_fold_datasets = epigeneticsData.k_fold_datasets
+
+MLP_keep_probability = 0.75
+LSTMs_keep_probability = 0.75
+
+# Training parameters
+RNN_learning_rate = 0.0001
+RNN_weight_decay = 0.001
+
+epigeneticsData = EmbryoDevelopmentData(7, 128, 6.3)
+
+k_fold_datasets = epigeneticsData.get_k_fold_datasets()
+
 input_data_size = epigeneticsData.input_data_size
 output_size = epigeneticsData.output_size
 
-k_fold_datasets_with_clusters = epigeneticsData.k_fold_datasets_with_clusters
+#k_fold_datasets_with_clusters = epigeneticsData.k_fold_datasets_with_clusters
 
 keys = k_fold_datasets.keys()
 validation_accuracy = list()
 
 ffnn = FeedforwardNeuralNetwork(input_data_size, [256, 128, 64, 32], output_size)
 #rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [128, 256, 512], [512, 256, 128, 32], output_size)
-
 #rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [64, 128, 256], [512, 256, 128, 32], output_size)
-
 #rnn = RecurrentNeuralNetwork(input_data_size/8, 8, [16, 32, 64, 128], [256, 128, 64, 32], output_size)
 
-rnn = RecurrentNeuralNetwork(32, 8, [128, 256], [128, 64], output_size)
+rnn = RecurrentNeuralNetwork(16, 8, [64, 256], [128, 64], output_size)
 
 for key in keys:
     print "key number" + str(key)
@@ -44,7 +52,8 @@ for key in keys:
     print len(validation_dataset["validation_data"])
 
     accuracy = rnn.train_and_validate(
-        training_dataset, validation_dataset)
+        training_dataset, validation_dataset,
+        RNN_learning_rate, RNN_weight_decay, LSTMs_keep_probability, MLP_keep_probability)
     validation_accuracy.append(accuracy)
 
 print validation_accuracy
