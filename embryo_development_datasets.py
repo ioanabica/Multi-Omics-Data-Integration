@@ -22,6 +22,29 @@ def compute_probability_distribution(gene_expressions):
 
     return normalized_gene_expressions
 
+def extract_training_validation_test_embryoIds(embryoStage_to_embryoIds):
+    """
+
+    :param embryoStage_to_embryoIds:
+    :return:
+    """
+    training_embryoIds = []
+    validation_embryoIds = []
+    test_embryoIds = []
+    embryoStages = embryoStage_to_embryoIds.keys()
+    for embryoStage in embryoStages:
+        embryoIds = embryoStage_to_embryoIds[embryoStage]
+        if len(embryoIds) < 6:
+            test_embryoIds += [embryoIds[0]]
+            validation_embryoIds += [embryoIds[1]]
+            training_embryoIds += embryoIds[2:]
+        else:
+            test_embryoIds += embryoIds[0:2]
+            validation_embryoIds += embryoIds[2:4]
+            training_embryoIds += embryoIds[4:]
+
+    return training_embryoIds, validation_embryoIds, test_embryoIds
+
 
 def create_training_dataset(
         training_embryo_ids, input_data_size, output_size,
@@ -88,6 +111,40 @@ def create_validation_dataset(
 
     return validation_dataset
 
+def create_test_dataset(
+        test_embryoIds, input_data_size, output_size,
+        embryoId_to_geneExpressions, embryoStage_to_oneHotEncoding, embryoId_to_embryoStage):
+
+    """
+
+    :param test_embryoIds:
+    :param input_data_size:
+    :param output_size:
+    :param embryoId_to_geneExpressions:
+    :param embryoStage_to_oneHotEncoding:
+    :param embryoId_to_embryoStage:
+    :return:
+    """
+
+    test_dataset = dict()
+    # create test data
+    test_data = np.ndarray(shape=(len(test_embryoIds), input_data_size),
+                           dtype=np.float32)
+    test_labels = np.ndarray(shape=(len(test_embryoIds), output_size),
+                             dtype=np.float32)
+
+    np.random.shuffle(test_embryoIds)
+    index = 0
+    for embryoId in test_embryoIds:
+        test_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
+        test_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
+        index += 1
+
+    test_dataset["test_data"] = test_data
+    test_dataset["test_labels"] = test_labels
+
+    return test_dataset
+
 
 def create_training_dataset_with_clusters(
         training_embryo_ids, clusters_size, output_size,
@@ -130,13 +187,12 @@ def create_training_dataset_with_clusters(
     return training_dataset
 
 
-
 def create_validation_dataset_with_clusters(
-        training_embryo_ids, clusters_size, output_size,
+        validation_embryo_ids, clusters_size, output_size,
         embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage):
     """
 
-    :param (list) training_embryo_ids:
+    :param (list) validation_embryo_ids:
     :param (list) clusters_size:
     :param (integer) output_size:
     :param (dictionary) embryo_id_to_gene_expressions_clusters:
@@ -149,15 +205,15 @@ def create_validation_dataset_with_clusters(
     validation_data = dict()
 
     for cluster_id in range(len(clusters_size)):
-        validation_data[cluster_id] = np.ndarray(shape=(len(training_embryo_ids), clusters_size[cluster_id]),
+        validation_data[cluster_id] = np.ndarray(shape=(len(validation_embryo_ids), clusters_size[cluster_id]),
                                                  dtype=np.float32)
 
-    validation_labels = np.ndarray(shape=(len(training_embryo_ids), output_size),
+    validation_labels = np.ndarray(shape=(len(validation_embryo_ids), output_size),
                                    dtype=np.float32)
 
-    np.random.shuffle(training_embryo_ids)
+    np.random.shuffle(validation_embryo_ids)
     index = 0
-    for embryoId in training_embryo_ids:
+    for embryoId in validation_embryo_ids:
         for cluster_id in range(len(clusters_size)):
             validation_data[cluster_id][index, :] = \
                 compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
@@ -169,6 +225,44 @@ def create_validation_dataset_with_clusters(
 
     return validation_dataset
 
+
+def create_test_dataset_with_clusters(
+        test_embryo_ids, clusters_size, output_size,
+        embryo_id_to_gene_expressions_clusters, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage):
+    """
+
+    :param (list) test_embryo_ids:
+    :param (list) clusters_size:
+    :param (integer) output_size:
+    :param (dictionary) embryo_id_to_gene_expressions_clusters:
+    :param (dictionary) embryo_stage_to_one_hot_encoding:
+    :param (dictionary) embryo_id_to_embryo_stage:
+    :return:
+    """
+    testing_dataset = dict()
+
+    testing_data = dict()
+
+    for cluster_id in range(len(clusters_size)):
+        testing_data[cluster_id] = np.ndarray(shape=(len(test_embryo_ids), clusters_size[cluster_id]),
+                                              dtype=np.float32)
+
+    training_labels = np.ndarray(shape=(len(test_embryo_ids), output_size),
+                                 dtype=np.float32)
+
+    np.random.shuffle(test_embryo_ids)
+    index = 0
+    for embryoId in test_embryo_ids:
+        for cluster_id in range(len(clusters_size)):
+            testing_data[cluster_id][index, :] = \
+                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
+        training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
+        index += 1
+
+    testing_dataset["training_data"] = testing_data
+    testing_dataset["training_labels"] = training_labels
+
+    return testing_dataset
 
 def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
     """

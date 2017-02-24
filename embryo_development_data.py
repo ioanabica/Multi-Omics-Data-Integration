@@ -23,7 +23,7 @@ class EmbryoDevelopmentData(EpigeneticData):
         self.input_data_size = len(self.embryo_id_to_gene_expressions[embryoIds[0]])
 
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
 
         self.output_size = len(embryo_stages)
 
@@ -33,9 +33,39 @@ class EmbryoDevelopmentData(EpigeneticData):
 
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, self.k_fold_embryoIds, self.input_data_size, self.output_size,
-            self.embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
+            self.embryo_id_to_gene_expressions, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
         return self.k_fold_datasets
+
+    def get_training_validation_testing_datasets(self):
+        training_embryo_ids, validation_embryo_ids, test_embryo_ids = \
+            extract_training_validation_test_embryo_ids(self.embryo_stage_to_embryo_ids)
+
+        training_dataset = create_training_dataset(
+            training_embryo_ids,
+            self.input_data_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        validation_dataset = create_validation_dataset(
+            validation_embryo_ids,
+            self.input_data_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        test_dataset = create_test_dataset(
+            test_embryo_ids,
+            self.input_data_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        return training_dataset, validation_dataset, test_dataset
 
     def extract_data_from_embryo_stage_file(self):
         embryo_stage_file = open('data/epigenetics_data/human_early_embryo_stage.txt', 'r')
@@ -99,3 +129,32 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         return self.k_fold_datasets
 
 
+    def get_training_validation_testing_datasets(self):
+        training_embryoIds, validation_embryoIds, test_embryoIds = \
+            extract_training_validation_test_embryo_ids(self.embryo_stage_to_embryo_ids)
+
+        training_dataset = create_training_dataset_with_clusters(
+            training_embryoIds,
+            self.clusters_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        validation_dataset = create_validation_dataset(
+            validation_embryoIds,
+            self.clusters_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        test_dataset = create_test_dataset(
+            test_embryoIds,
+            self.clusters_size,
+            self.output_size,
+            self.embryo_id_to_gene_expressions,
+            self.embryo_stage_to_one_hot_encoding,
+            self.embryo_id_to_embryo_stage)
+
+        return training_dataset, validation_dataset, test_dataset
