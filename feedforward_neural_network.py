@@ -172,7 +172,10 @@ class FeedforwardNeuralNetwork(object):
 
         steps = 6000
         losses = []
-        training_accuracy = []
+
+        training_accuracy_list = list()
+        validation_accuracy_list = list()
+        steps_list = list()
 
         with tf.Session(graph=graph) as session:
 
@@ -196,11 +199,10 @@ class FeedforwardNeuralNetwork(object):
                 _, loss, predictions, summary = session.run(
                     [optimizer, training_loss, training_predictions, merged_summary], feed_dict=feed_dictionary)
                 losses.append(loss)
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
 
                 summary_writer.add_summary(summary, step)
 
-                if (step % 500 == 0):
+                if (step % 60 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
@@ -210,6 +212,10 @@ class FeedforwardNeuralNetwork(object):
 
                     validation_accuracy = self.compute_predictions_accuracy(
                         validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
+                    training_accuracy_list.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+                    validation_accuracy_list.append(validation_accuracy)
+                    steps_list.append(step)
 
                     print('Validation accuracy: %.1f%%' % validation_accuracy)
 
@@ -222,7 +228,7 @@ class FeedforwardNeuralNetwork(object):
 
             print('Test accuracy: %.1f%%' % test_accuracy)
 
-        return validation_accuracy, training_accuracy, losses
+        return training_accuracy_list, validation_accuracy_list, steps_list, test_accuracy
 
 
     def initialize_weights_and_biases(self):

@@ -262,8 +262,8 @@ def create_test_dataset_with_clusters(
         training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 
-    testing_dataset["training_data"] = testing_data
-    testing_dataset["training_labels"] = training_labels
+    testing_dataset["test_data"] = testing_data
+    testing_dataset["test_labels"] = training_labels
 
     return testing_dataset
 

@@ -258,7 +258,11 @@ class RecurrentNeuralNetwork(object):
             test_predictions = tf.nn.softmax(test_logits)
 
         steps = 20000
-        training_accuracy = list()
+
+        training_accuracy_list = list()
+        validation_accuracy_list = list()
+        steps_list = list()
+
         losses = list()
         with tf.Session(graph=graph) as session:
 
@@ -282,7 +286,6 @@ class RecurrentNeuralNetwork(object):
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
                 losses.append(loss)
 
                 if (step % 500 == 0):
@@ -297,6 +300,10 @@ class RecurrentNeuralNetwork(object):
                     validation_accuracy = self.compute_predictions_accuracy(
                         validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
+                    training_accuracy_list.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+                    validation_accuracy_list.append(validation_accuracy)
+                    steps_list.append(step)
+
                     print('Validation accuracy: %.1f%%' % validation_accuracy)
 
             """ After training, compute the accuracy the model gets on the test data"""
@@ -310,7 +317,7 @@ class RecurrentNeuralNetwork(object):
 
             print('Test accuracy: %.1f%%' % test_accuracy)
 
-        return validation_accuracy, training_accuracy, losses
+        return training_accuracy_list, validation_accuracy_list, steps_list, test_accuracy
 
     def initializa_weights_and_biases_for_LSTM_cell(self, input_size, num_units):
         weights = dict()

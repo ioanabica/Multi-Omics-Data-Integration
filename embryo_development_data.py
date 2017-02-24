@@ -105,7 +105,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         embryo_gene_expressions_file = open('data/epigenetics_data/human_early_embryo_gene_expression.txt', 'r')
 
         self.gene_id_to_gene_cluster, self.gene_clusters = \
-            k_means_clustering(self.geneId_to_expression_levels, self.num_clusters)
+            hierarchical_clustering(self.geneId_to_expression_levels, self.num_clusters)
 
 
         self.embryo_id_to_gene_expressions_clusters = extract_embryo_id_to_gene_expressions_clusters(
@@ -138,7 +138,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
 
     def get_training_validation_test_datasets(self):
-        training_embryoIds, validation_embryoIds, test_embryoIds = \
+        training_embryo_ids, validation_embryo_ids, test_embryo_ids = \
             extract_training_validation_test_embryo_ids(self.embryo_stage_to_embryo_ids)
 
         embryoIds = self.embryo_id_to_embryo_stage.keys()
@@ -150,26 +150,26 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         self.output_size = len(embryo_stages)
 
         training_dataset = create_training_dataset_with_clusters(
-            training_embryoIds,
+            training_embryo_ids,
             self.clusters_size,
             self.output_size,
-            self.embryo_id_to_gene_expressions,
+            self.embryo_id_to_gene_expressions_clusters,
             self.embryo_stage_to_one_hot_encoding,
             self.embryo_id_to_embryo_stage)
 
-        validation_dataset = create_validation_dataset(
-            validation_embryoIds,
+        validation_dataset = create_validation_dataset_with_clusters(
+            validation_embryo_ids,
             self.clusters_size,
             self.output_size,
-            self.embryo_id_to_gene_expressions,
+            self.embryo_id_to_gene_expressions_clusters,
             self.embryo_stage_to_one_hot_encoding,
             self.embryo_id_to_embryo_stage)
 
-        test_dataset = create_test_dataset(
-            test_embryoIds,
+        test_dataset = create_test_dataset_with_clusters(
+            test_embryo_ids,
             self.clusters_size,
             self.output_size,
-            self.embryo_id_to_gene_expressions,
+            self.embryo_id_to_gene_expressions_clusters,
             self.embryo_stage_to_one_hot_encoding,
             self.embryo_id_to_embryo_stage)
 

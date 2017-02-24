@@ -88,7 +88,7 @@ class SuperlayeredNeuralNetwork(object):
             validation_predictions = tf.nn.softmax(self.inference(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
-        steps = 10000
+        steps = 6000
         training_accuracy = []
         losses = []
 
@@ -116,7 +116,7 @@ class SuperlayeredNeuralNetwork(object):
                 training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
                 losses.append(loss)
 
-                if (step % 500 == 0):
+                if (step % 100 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
@@ -185,11 +185,15 @@ class SuperlayeredNeuralNetwork(object):
             validation_predictions = tf.nn.softmax(self.inference(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
             test_predictions = tf.nn.softmax(self.inference(
-                s1_test_data, s2_validation_data, weights, biases, tf_keep_probability))
+                s1_test_data, s2_test_data, weights, biases, tf_keep_probability))
 
-        steps = 10000
-        training_accuracy = []
-        losses = []
+        steps = 20000
+        training_accuracy_list = list()
+        validation_accuracy_list = list()
+        steps_list = list()
+
+        #training_loss = list()
+        #validation_loss = list()
 
         with tf.Session(graph=graph) as session:
 
@@ -212,10 +216,8 @@ class SuperlayeredNeuralNetwork(object):
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
-                losses.append(loss)
 
-                if (step % 500 == 0):
+                if (step % 60 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
@@ -224,6 +226,10 @@ class SuperlayeredNeuralNetwork(object):
                         s1_validation_data, s2_validation_data, validation_labels, 1.0)
                     validation_accuracy = self.compute_predictions_accuracy(
                         validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
+                    training_accuracy_list.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+                    validation_accuracy_list.append(validation_accuracy)
+                    steps_list.append(step)
 
                     print('Validation accuracy: %.1f%%' % validation_accuracy)
 
@@ -235,7 +241,7 @@ class SuperlayeredNeuralNetwork(object):
 
             print('Test accuracy: %.1f%%' % test_accuracy)
 
-            return validation_accuracy, training_accuracy, losses
+            return training_accuracy_list, validation_accuracy_list, steps_list, test_accuracy
 
     def initialize_weights_and_biases_for_one_superlayer(self, input_data_size, hidden_units, merge_layer_size):
         """
