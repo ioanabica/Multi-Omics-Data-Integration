@@ -118,6 +118,113 @@ class FeedforwardNeuralNetwork(object):
 
         return validation_accuracy, training_accuracy, losses
 
+    def train_validate_test(self, training_dataset, validation_dataset, test_dataset,
+                            learning_rate, weight_decay, keep_probability):
+        """
+        Train the feed forward neural network using gradient descent by trying to minimize the loss.
+
+        :param training_dataset: dictionary containing the training data and training labels
+        :param validation_dataset: dictionary containing the validation data and validation labels
+        :param learning_rate:
+        :param weight_decay:
+        :param keep_probability:
+        :return: the validation accuracy of the model
+        """
+
+        training_data = training_dataset["training_data"]
+        training_labels = training_dataset["training_labels"]
+
+        validation_data = validation_dataset["validation_data"]
+        validation_labels = validation_dataset["validation_labels"]
+
+        test_data = test_dataset["test_data"]
+        test_labels = test_dataset["test_labels"]
+
+        print len(training_data)
+        print len(validation_data)
+        print len(test_data)
+
+        graph = tf.Graph()
+        with graph.as_default():
+
+            # create placeholders for input tensors
+            tf_input_data = tf.placeholder(tf.float32, shape=(None, self.input_data_size), name='TrainingExample')
+            tf_input_labels = tf.placeholder(tf.float32, shape=(None, self.output_size), name='OutputLabel')
+
+            # create placeholder for the keep probability
+            # dropout is used during training, but not during testing
+            tf_keep_probability = tf.placeholder(tf.float32)
+            tf.scalar_summary('dropout_keep_probability', keep_probability)
+
+            weights, biases = self.initialize_weights_and_biases()
+
+            logits = self.inference(tf_input_data, weights, biases, tf_keep_probability)
+            training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)
+
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
+
+            training_predictions = tf.nn.softmax(logits)
+            validation_predictions = tf.nn.softmax(
+                self.inference(validation_data, weights, biases, tf_keep_probability))
+            test_predictions = tf.nn.softmax(self.inference(test_data, weights, biases, tf_keep_probability))
+
+            merged_summary = tf.merge_all_summaries()
+
+        steps = 6000
+        losses = []
+        training_accuracy = []
+
+        with tf.Session(graph=graph) as session:
+
+            # initialize weights and biases
+            tf.initialize_all_variables().run()
+
+            summary_writer = tf.train.SummaryWriter(logs_path, graph)
+
+            for step in range(steps):
+
+                offset = (step * batch_size) % (training_labels.shape[0] - batch_size)
+
+                # Create a training minibatch.
+                minibatch_data = training_data[offset:(offset + batch_size), :]
+                minibatch_labels = training_labels[offset:(offset + batch_size), :]
+
+                feed_dictionary = self.create_feed_dictionary(
+                    tf_input_data, tf_input_labels, tf_keep_probability,
+                    minibatch_data, minibatch_labels, keep_probability)
+
+                _, loss, predictions, summary = session.run(
+                    [optimizer, training_loss, training_predictions, merged_summary], feed_dict=feed_dictionary)
+                losses.append(loss)
+                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+
+                summary_writer.add_summary(summary, step)
+
+                if (step % 500 == 0):
+                    print('Minibatch loss at step %d: %f' % (step, loss))
+                    print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
+
+                    validation_feed_dictionary = self.create_feed_dictionary(
+                        tf_input_data, tf_input_labels, tf_keep_probability,
+                        validation_data, validation_labels, 1.0)
+
+                    validation_accuracy = self.compute_predictions_accuracy(
+                        validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
+                    print('Validation accuracy: %.1f%%' % validation_accuracy)
+
+            test_feed_dictionary = self.create_feed_dictionary(
+                tf_input_data, tf_input_labels, tf_keep_probability,
+                test_data, test_labels, 1.0)
+
+            test_accuracy = self.compute_predictions_accuracy(
+                test_predictions.eval(feed_dict=test_feed_dictionary), test_labels)
+
+            print('Test accuracy: %.1f%%' % test_accuracy)
+
+        return validation_accuracy, training_accuracy, losses
+
+
     def initialize_weights_and_biases(self):
         """
         Initialize the weights for the neural network using He initialization and initialize the biases to zero

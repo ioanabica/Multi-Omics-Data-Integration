@@ -22,7 +22,8 @@ def compute_probability_distribution(gene_expressions):
 
     return normalized_gene_expressions
 
-def extract_training_validation_test_embryoIds(embryoStage_to_embryoIds):
+
+def extract_training_validation_test_embryo_ids(embryoStage_to_embryoIds):
     """
 
     :param embryoStage_to_embryoIds:
@@ -79,6 +80,7 @@ def create_training_dataset(
 
     return training_dataset
 
+
 def create_validation_dataset(
         validation_embryo_ids, input_data_size, output_size,
         embryo_id_to_gene_expressions, embryo_stage_to_one_hot_encoding, embryo_id_to_embryo_stage):
@@ -110,6 +112,7 @@ def create_validation_dataset(
     validation_dataset["validation_labels"] = validation_labels
 
     return validation_dataset
+
 
 def create_test_dataset(
         test_embryoIds, input_data_size, output_size,
@@ -263,6 +266,7 @@ def create_test_dataset_with_clusters(
     testing_dataset["training_labels"] = training_labels
 
     return testing_dataset
+
 
 def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
     """

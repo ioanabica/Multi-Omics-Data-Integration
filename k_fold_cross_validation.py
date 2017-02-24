@@ -108,6 +108,10 @@ def cross_validate_superlayeredNN():
         [128, 32],
         output_size)
 
+    learning_rate = 0.05
+    weight_decay = 0.01
+    keep_probability = 0.5
+
     keys = k_fold_datasets_with_clusters.keys()
 
 
@@ -120,7 +124,8 @@ def cross_validate_superlayeredNN():
         print len(training_dataset["training_data"][0])
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
         print len(validation_dataset["validation_data"][0])
-        validation_accuracy, training_accuracy, loss = superlayered_nn.train_and_validate(training_dataset, validation_dataset)
+        validation_accuracy, training_accuracy, loss = superlayered_nn.train_and_validate(
+            training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability)
         validation_accuracies.append(validation_accuracy)
         training_accuracies.append(training_accuracy)
         losses.append(loss)
