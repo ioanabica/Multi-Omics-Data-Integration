@@ -16,11 +16,11 @@ import tensorflow as tf
 #s2_hidden_units_3 = 128
 #s2_hidden_units_4 = 64
 
-merge_layer_size_1 = 128
-merge_layer_size_2 = 32
+#merge_layer_size_1 = 64
+#merge_layer_size_2 = 32
 
 
-keep_probability = 0.5
+keep_probability = 0.70
 epsilon = 1e-3
 
 # Training parameters
@@ -382,7 +382,10 @@ class SuperlayeredNeuralNetwork(object):
             validation_predictions = tf.nn.softmax(inference(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
-        steps = 8000
+        steps = 10000
+        training_accuracy = []
+        losses = []
+
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
@@ -404,6 +407,8 @@ class SuperlayeredNeuralNetwork(object):
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
+                training_accuracy.append(compute_predictions_accuracy(predictions, minibatch_labels))
+                losses.append(loss)
 
                 if (step % 500 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
@@ -416,4 +421,4 @@ class SuperlayeredNeuralNetwork(object):
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
             print('Validation accuracy: %.1f%%' % validation_accuracy)
-            return validation_accuracy
+            return validation_accuracy, training_accuracy, losses

@@ -121,7 +121,9 @@ class RecurrentNeuralNetwork(object):
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 15000
+        steps = 20000
+        training_accuracy = list()
+        losses = list()
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
@@ -143,6 +145,8 @@ class RecurrentNeuralNetwork(object):
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
+                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+                losses.append(loss)
 
                 if (step % 500 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
@@ -157,7 +161,7 @@ class RecurrentNeuralNetwork(object):
 
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        return validation_accuracy
+        return validation_accuracy, training_accuracy, losses
 
     def initializa_weights_and_biases_for_LSTM_cell(self, input_size, num_units):
         weights = dict()

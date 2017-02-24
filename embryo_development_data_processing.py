@@ -21,8 +21,8 @@ def compute_gene_entropy(gene_expressions):
     The entropy of the gene is useful in determining which genes change their values a lot over the stages of
     embryonic development.
 
-    :param (list) gene_expressions: an array containing the gene expression profile
-    :return (float): gene_entropy: a float representing the entropy of the gene expression profile
+    :param (list) gene_expressions: an array containing the gene expression levels
+    :return (float): gene_entropy: a float representing the entropy of the gene expression levels
 
     """
     gene_entropy = 0.0
@@ -37,7 +37,7 @@ def extract_data_from_embryo_stage_file(data_file):
     """
     Create one dictionary from an embryo_id to the corresponding development stage.
     Create another dictionary that maps the embryo development stage to a list of corresponding embryo_ids
-    whose gene expression profile was measured at this stage.
+    whose gene expression levels was measured at this stage.
     The data is extracted from the input file.
 
     :param (file) data_file
@@ -58,17 +58,17 @@ def extract_data_from_embryo_stage_file(data_file):
     return embryo_id_to_embryo_stage, embryo_stage_to_embryo_ids
 
 
-def extract_gene_id_to_gene_entropy_and_expression_profile(data_file, gene_entropy_threshold, max_num_genes):
+def extract_gene_id_to_gene_entropy_and_expression_levels(data_file, gene_entropy_threshold, max_num_genes):
     """
     Creates two dictionaries: one dictionary that maps the gene_id to its corresponding gene entropy and
-                             one dictionary that maps the gene_id to its corresponding expression_profile
+                             one dictionary that maps the gene_id to its corresponding expression_levels
     The data is extracted from the input file.
 
     :param (file) data_file
-    :return (dictionary, dictionary): gene_id_to_gene_entropy, gene_id_to_expression_profile
+    :return (dictionary, dictionary): gene_id_to_gene_entropy, gene_id_to_expression_levels
     """
     gene_id_to_gene_entropy = dict()
-    gene_id_to_expression_profile = dict()
+    gene_id_to_expression_levels = dict()
 
     data_file.readline()
     num_genes = 0
@@ -79,9 +79,9 @@ def extract_gene_id_to_gene_entropy_and_expression_profile(data_file, gene_entro
 
         if (gene_entropy > gene_entropy_threshold) & (num_genes < max_num_genes):
             num_genes += 1
-            gene_id_to_expression_profile[line_elements[0]] = line_elements[1:]
+            gene_id_to_expression_levels[line_elements[0]] = line_elements[1:]
 
-    return gene_id_to_gene_entropy, gene_id_to_expression_profile
+    return gene_id_to_gene_entropy, gene_id_to_expression_levels
 
 
 def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, gene_entropy_threshold, max_num_genes):

@@ -5,7 +5,6 @@ from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from feedforward_neural_network import FeedforwardNeuralNetwork
 
 
-
 num_classes = 7
 num_genes = 128
 num_shifted_genes = 16
@@ -151,15 +150,6 @@ class SyntheticData(object):
     ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
     validation_accurat = ffnn.train_and_validate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
 
-
-    #rnn = RecurrentNeuralNetwork(num_genes/8, 8, [64, 128, 256], [512, 256, 128, 32], num_classes)
-
-    # rnn = RecurrentNeuralNetwork(num_genes/4, 4, [64, 128, 256], [512, 256, 128, 32], num_classes)
-    # rnn = RecurrentNeuralNetwork(num_genes/8, 8, [32, 64, 128], [256, 128, 64, 32], num_classes)
-
-    # rnn = RecurrentNeuralNetwork(num_genes/8, 8, [32, 64, 128, 256], [256, 128, 64, 32], num_classes)
-
-    #rnn = RecurrentNeuralNetwork(16, 8, [32, 64, 64, 128], [128, 64], num_classes)
 
     rnn = RecurrentNeuralNetwork(32, 4, [64, 256], [256, 64], num_classes)
 

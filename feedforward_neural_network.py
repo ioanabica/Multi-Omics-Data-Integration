@@ -16,6 +16,8 @@ epsilon = 1e-3
 #weight_decay = 0.01
 batch_size = 16
 
+
+
 logs_path = '/tmp/tensorboard'
 
 
@@ -68,8 +70,9 @@ class FeedforwardNeuralNetwork(object):
 
             merged_summary = tf.merge_all_summaries()
 
-        steps = 6000
+        steps = 10000
         losses = []
+        training_accuracy = []
 
         with tf.Session(graph=graph) as session:
 
@@ -93,6 +96,7 @@ class FeedforwardNeuralNetwork(object):
                 _, loss, predictions, summary = session.run(
                     [optimizer, training_loss, training_predictions, merged_summary], feed_dict=feed_dictionary)
                 losses.append(loss)
+                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
 
                 summary_writer.add_summary(summary, step)
 
@@ -112,7 +116,7 @@ class FeedforwardNeuralNetwork(object):
 
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        return validation_accuracy
+        return validation_accuracy, training_accuracy, losses
 
     def initialize_weights_and_biases(self):
         """
