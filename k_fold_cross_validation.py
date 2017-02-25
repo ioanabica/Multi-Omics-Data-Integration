@@ -28,9 +28,7 @@ def cross_validate_MLP():
 
     keys = k_fold_datasets.keys()
 
-    validation_accuracies = list()
-    training_accuracies = list()
-    losses = list()
+    confussion_matrix = np.zeros(shape=(output_size, output_size))
 
     for key in keys:
         print "key number" + str(key)
@@ -42,14 +40,15 @@ def cross_validate_MLP():
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, training_accuracy, loss = ffnn.train_and_validate(
+        validation_accuracy, ffnn_confussion_matrix = ffnn.train_and_validate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
-        validation_accuracies.append(validation_accuracy)
-        training_accuracies.append(training_accuracy)
-        losses.append(loss)
+        print confussion_matrix
+        confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
 
-    return validation_accuracies, training_accuracies, losses
+    print confussion_matrix
+
+    return confussion_matrix
 
 
 def cross_validate_RNN():
@@ -136,19 +135,22 @@ def cross_validate_superlayeredNN():
 #epi_data = EmbryoDevelopmentDataWithClusters(2, 4, 16, 6.3)
 #plot_dendogram(epi_data.geneId_to_expression_levels)
 
-SNN_validation_accuracy, SNN_training_accuracies, SNN_losses = cross_validate_superlayeredNN()
-print SNN_validation_accuracy
-print np.mean(SNN_validation_accuracy)
 
-MLP_validation_accuracy, MLP_training_accuracies, MLP_losses = cross_validate_MLP()
-print MLP_validation_accuracy
-print np.mean(MLP_validation_accuracy)
+confussion_matrix = cross_validate_MLP()
 
 
 
-RNN_validation_accuracy, RNN_training_accuracies, RNN_losses = cross_validate_RNN()
-print RNN_validation_accuracy
-print np.mean(RNN_validation_accuracy)
+
+#SNN_validation_accuracy, SNN_training_accuracies, SNN_losses = cross_validate_superlayeredNN()
+#print SNN_validation_accuracy
+#print np.mean(SNN_validation_accuracy)
+
+
+
+
+#RNN_validation_accuracy, RNN_training_accuracies, RNN_losses = cross_validate_RNN()
+#print RNN_validation_accuracy
+#print np.mean(RNN_validation_accuracy)
 
 
 

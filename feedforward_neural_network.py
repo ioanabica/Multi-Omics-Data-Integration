@@ -71,8 +71,6 @@ class FeedforwardNeuralNetwork(object):
             merged_summary = tf.merge_all_summaries()
 
         steps = 10000
-        losses = []
-        training_accuracy = []
 
         with tf.Session(graph=graph) as session:
 
@@ -95,8 +93,6 @@ class FeedforwardNeuralNetwork(object):
 
                 _, loss, predictions, summary = session.run(
                     [optimizer, training_loss, training_predictions, merged_summary], feed_dict=feed_dictionary)
-                losses.append(loss)
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
 
                 summary_writer.add_summary(summary, step)
 
@@ -114,9 +110,11 @@ class FeedforwardNeuralNetwork(object):
             validation_accuracy = self.compute_predictions_accuracy(
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
+            confussion_matrix = self.compute_confussion_matrix(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        return validation_accuracy, training_accuracy, losses
+        return validation_accuracy, confussion_matrix
 
     def train_validate_test(self, training_dataset, validation_dataset, test_dataset,
                             learning_rate, weight_decay, keep_probability):
@@ -396,3 +394,14 @@ class FeedforwardNeuralNetwork(object):
 
         return (100 * num_correct_labels) / predictions.shape[0]
 
+
+    def compute_confussion_matrix(self, predictions, labels):
+
+        confusion_matrix = np.zeros(shape=(self.output_size, self.output_size))
+        for index in range(predictions.shape[0]):
+            predicted_class_index = np.argmax(predictions[index])
+            actual_class_index = np.argmax(labels[index])
+
+            confusion_matrix[actual_class_index][predicted_class_index] +=1
+
+        return confusion_matrix

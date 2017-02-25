@@ -288,7 +288,7 @@ class RecurrentNeuralNetwork(object):
 
                 losses.append(loss)
 
-                if (step % 500 == 0):
+                if (step % 100 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print(
                     'Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
