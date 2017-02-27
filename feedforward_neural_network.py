@@ -14,7 +14,7 @@ epsilon = 1e-3
 # Training parameters
 #learning_rate = 0.05
 #weight_decay = 0.01
-batch_size = 16
+batch_size = 64
 
 
 
@@ -168,7 +168,7 @@ class FeedforwardNeuralNetwork(object):
 
             merged_summary = tf.merge_all_summaries()
 
-        steps = 6000
+        steps = 10000
         losses = []
 
         training_accuracy_list = list()
@@ -200,7 +200,7 @@ class FeedforwardNeuralNetwork(object):
 
                 summary_writer.add_summary(summary, step)
 
-                if (step % 60 == 0):
+                if (step % 400 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 

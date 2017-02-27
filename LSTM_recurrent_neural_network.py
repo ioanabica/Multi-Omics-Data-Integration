@@ -8,7 +8,7 @@ import tensorflow as tf
 # Training parameters
 # learning_rate = 0.0001
 # weight_decay = 0.001
-batch_size = 32
+batch_size = 64
 
 epsilon = 1e-3
 
@@ -292,7 +292,7 @@ class RecurrentNeuralNetwork(object):
 
                 losses.append(loss)
 
-                if (step % 100 == 0):
+                if (step % 400 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print(
                     'Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))

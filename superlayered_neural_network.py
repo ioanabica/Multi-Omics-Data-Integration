@@ -26,7 +26,7 @@ epsilon = 1e-3
 # Training parameters
 #learning_rate = 0.05
 #weight_decay = 0.01
-batch_size = 16
+batch_size = 64
 
 
 class SuperlayeredNeuralNetwork(object):
@@ -187,7 +187,7 @@ class SuperlayeredNeuralNetwork(object):
             test_predictions = tf.nn.softmax(self.inference(
                 s1_test_data, s2_test_data, weights, biases, tf_keep_probability))
 
-        steps = 20000
+        steps = 8000
         training_accuracy_list = list()
         validation_accuracy_list = list()
         steps_list = list()

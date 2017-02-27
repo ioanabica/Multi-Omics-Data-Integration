@@ -39,10 +39,6 @@ def extract_training_validation_test_patient_ids(labels_to_patient_ids):
         validation_patient_ids += patient_ids[num_training_patients + 1 : num_training_patients + num_validation_patients]
         test_patient_ids += patient_ids[num_training_patients + num_validation_patients:]
 
-    print training_patient_ids
-    print validation_patient_ids
-    print test_patient_ids
-
     return training_patient_ids, validation_patient_ids, test_patient_ids
 
 
@@ -69,9 +65,9 @@ def create_training_dataset(
                                  dtype=np.float32)
     np.random.shuffle(training_patient_ids)
     index = 0
-    for embryoId in training_patient_ids:
-        training_data[index, :] = compute_probability_distribution(patient_id_to_input_values[embryoId])
-        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[embryoId]]
+    for patient_id in training_patient_ids:
+        training_data[index, :] = compute_probability_distribution(patient_id_to_input_values[patient_id])
+        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[patient_id]]
         index += 1
 
     training_dataset["training_data"] = training_data
@@ -102,9 +98,9 @@ def create_validation_dataset(
 
     np.random.shuffle(validation_patient_ids)
     index = 0
-    for embryoId in validation_patient_ids:
-        validation_data[index, :] = compute_probability_distribution(patient_id_to_input_values[embryoId])
-        validation_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[embryoId]]
+    for patient_id in validation_patient_ids:
+        validation_data[index, :] = compute_probability_distribution(patient_id_to_input_values[patient_id])
+        validation_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[patient_id]]
         index += 1
 
     validation_dataset["validation_data"] = validation_data
@@ -115,16 +111,16 @@ def create_validation_dataset(
 
 def create_test_dataset(
         test_patient_ids, input_data_size, output_size,
-        embryoId_to_geneExpressions, label_to_oneHotEncoding, embryoId_to_label):
+        patient_id_to_geneExpressions, label_to_oneHotEncoding, patient_id_to_label):
 
     """
 
     :param test_patient_ids:
     :param input_data_size:
     :param output_size:
-    :param embryoId_to_geneExpressions:
+    :param patient_id_to_geneExpressions:
     :param label_to_oneHotEncoding:
-    :param embryoId_to_label:
+    :param patient_id_to_label:
     :return:
     """
 
@@ -137,9 +133,9 @@ def create_test_dataset(
 
     np.random.shuffle(test_patient_ids)
     index = 0
-    for embryoId in test_patient_ids:
-        test_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
-        test_labels[index, :] = label_to_oneHotEncoding[embryoId_to_label[embryoId]]
+    for patient_id in test_patient_ids:
+        test_data[index, :] = compute_probability_distribution(patient_id_to_geneExpressions[patient_id])
+        test_labels[index, :] = label_to_oneHotEncoding[patient_id_to_label[patient_id]]
         index += 1
 
     test_dataset["test_data"] = test_data
@@ -174,13 +170,11 @@ def create_training_dataset_with_clusters(
 
     np.random.shuffle(training_patient_ids)
     index = 0
-    print clusters_size
-    for embryoId in training_patient_ids:
+    for patient_id in training_patient_ids:
         for cluster_id in range(len(clusters_size)):
-            print patient_id_to_input_values_clusters
             training_data[cluster_id][index, :] = \
-                compute_probability_distribution(patient_id_to_input_values_clusters[embryoId][cluster_id])
-        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[embryoId]]
+                compute_probability_distribution(patient_id_to_input_values_clusters[patient_id][cluster_id])
+        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[patient_id]]
         index += 1
 
     training_dataset["training_data"] = training_data
@@ -215,11 +209,11 @@ def create_validation_dataset_with_clusters(
 
     np.random.shuffle(validation_patient_ids)
     index = 0
-    for embryoId in validation_patient_ids:
+    for patient_id in validation_patient_ids:
         for cluster_id in range(len(clusters_size)):
             validation_data[cluster_id][index, :] = \
-                compute_probability_distribution(patient_id_to_input_values_clusters[embryoId][cluster_id])
-        validation_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[embryoId]]
+                compute_probability_distribution(patient_id_to_input_values_clusters[patient_id][cluster_id])
+        validation_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[patient_id]]
         index += 1
 
     validation_dataset["validation_data"] = validation_data
@@ -254,11 +248,11 @@ def create_test_dataset_with_clusters(
 
     np.random.shuffle(test_patient_ids)
     index = 0
-    for embryoId in test_patient_ids:
+    for patient_id in test_patient_ids:
         for cluster_id in range(len(clusters_size)):
             testing_data[cluster_id][index, :] = \
-                compute_probability_distribution(patient_id_to_input_values_clusters[embryoId][cluster_id])
-        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[embryoId]]
+                compute_probability_distribution(patient_id_to_input_values_clusters[patient_id][cluster_id])
+        training_labels[index, :] = label_to_one_hot_encoding[patient_id_to_label[patient_id]]
         index += 1
 
     testing_dataset["test_data"] = testing_data
@@ -286,8 +280,6 @@ def create_k_fold_patient_ids(k, label_to_patient_ids):
         for index in range(k-1):
             k_fold_patient_ids[index] += patient_ids[index*group_size:(index+1)*group_size]
         k_fold_patient_ids[k-1] += patient_ids[(k-1)*group_size:]
-
-    print k_fold_patient_ids
 
     return k_fold_patient_ids
 
@@ -363,6 +355,7 @@ def create_k_fold_datasets_with_clusters(
         training_dataset = create_training_dataset_with_clusters(
             training_patient_ids, clusters_size, output_size,
             patient_id_to_input_values_clusters, label_to_one_hot_encoding, patient_id_to_label)
+
 
         validation_dataset = create_validation_dataset_with_clusters(
             validation_patient_ids, clusters_size, output_size,

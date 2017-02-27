@@ -1,6 +1,10 @@
 from epigenetic_data import EpigeneticData
 from cancer_data_processing import extract_patients_data, create_one_hot_encoding
-from cancer_data_datasets import *
+from cancer_data_datasets import extract_training_validation_test_patient_ids, create_k_fold_patient_ids, \
+    create_training_dataset, create_training_dataset_with_clusters, \
+    create_test_dataset, create_test_dataset_with_clusters, \
+    create_validation_dataset, create_validation_dataset_with_clusters, \
+    create_k_fold_datasets, create_k_fold_datasets_with_clusters
 
 class CancerData(EpigeneticData):
 
@@ -75,10 +79,10 @@ class CancerData(EpigeneticData):
 
 
 
-data = CancerData(3)
+#data = CancerData(3)
 
-k_fold_datasets = data.get_k_fold_datasets()
-training_dataset, validation_dataset, test_dataset = data.get_training_validation_test_datasets()
+#k_fold_datasets = data.get_k_fold_datasets()
+#training_dataset, validation_dataset, test_dataset = data.get_training_validation_test_datasets()
 
 
 
@@ -124,7 +128,7 @@ class CancerDataWithClusters(CancerData):
         self.k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
 
         self.k_fold_datasets = create_k_fold_datasets_with_clusters(
-            self.num_folds, self.k_fold_patient_ids, self.clusters_size_size, self.output_size,
+            self.num_folds, self.k_fold_patient_ids, self.clusters_size, self.output_size,
             self.patient_id_to_input_clusters, self.label_to_one_hot_encoding,
             self.patient_id_to_label)
 
@@ -168,11 +172,3 @@ class CancerDataWithClusters(CancerData):
             self.patient_id_to_label)
 
         return training_dataset, validation_dataset, test_dataset
-
-
-
-
-
-
-
-

@@ -1,7 +1,4 @@
 import math
-import numpy as np
-from gene_clustering import hierarchical_clustering
-from embryo_development_datasets import *
 
 # Set the gene entropy threshold for selecting the gene
 """ To obtain a cluster with 128 genes set gene_entropy_treshold = 6.1 and max_num_genes = 250"""

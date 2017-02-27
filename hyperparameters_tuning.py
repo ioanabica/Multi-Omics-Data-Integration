@@ -37,7 +37,7 @@ def RNN_hyperparameters_tunning():
 
     # Training parameters
     RNN_learning_rate = 0.0001
-    RNN_weight_decay = 0.02
+    RNN_weight_decay = 0.005
     #epigeneticsData = EmbryoDevelopmentData(1, 256, 6.25)
 
     epigeneticsData = CancerData(5)
@@ -51,7 +51,7 @@ def RNN_hyperparameters_tunning():
     #rnn = RecurrentNeuralNetwork(16, 16, [64, 128], [128, 64], output_size)
 
     print input_data_size
-    rnn = RecurrentNeuralNetwork(26, 2, [16, 32], [64, 16], output_size)
+    rnn = RecurrentNeuralNetwork(26, 2, [32, 128], [64, 16], output_size)
 
 
     training_accuracy, validation_accuracy, steps_list, test_accuracy = rnn.train_validate_test(
@@ -68,7 +68,6 @@ def superlayeredNN_hyperparameters_tuning():
     epigeneticsData = CancerDataWithClusters(5)
     training_dataset, validation_dataset, test_dataset = epigeneticsData.get_training_validation_test_datasets()
     clusters_size = epigeneticsData.clusters_size
-    print(clusters_size)
     output_size = epigeneticsData.output_size
 
     """superlayered_nn = SuperlayeredNeuralNetwork(
@@ -79,18 +78,20 @@ def superlayeredNN_hyperparameters_tuning():
 
     superlayered_nn = SuperlayeredNeuralNetwork(
         [clusters_size[0], clusters_size[1]],
-        [[32, 128, 64, 16], [32, 128, 64, 16]],
-        [32, 16],
+        [[64, 256, 128, 16], [64, 256, 128, 16]],
+        [64, 16],
         output_size)
 
     learning_rate = 0.02
     weight_decay = 0.01
     keep_probability = 0.50
 
+    print "got her"
     training_accuracy, validation_accuracy, steps_list, test_accuracy = superlayered_nn.train_validate_test(
         training_dataset, validation_dataset, test_dataset, learning_rate, weight_decay, keep_probability)
 
     plot_training_accuracy_and_validation_accuracy(training_accuracy, validation_accuracy, steps_list)
+
 
 
 def plot_training_accuracy_and_validation_accuracy(training_accuracy, validation_accuracy, steps_list):
