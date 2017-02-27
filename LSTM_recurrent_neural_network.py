@@ -8,7 +8,7 @@ import tensorflow as tf
 # Training parameters
 # learning_rate = 0.0001
 # weight_decay = 0.001
-batch_size = 16
+batch_size = 32
 
 epsilon = 1e-3
 
@@ -248,6 +248,10 @@ class RecurrentNeuralNetwork(object):
                 tf_LSTMs_keep_probability, tf_MLP_keep_probability)
 
             validation_predictions = tf.nn.softmax(validation_logits)
+
+            # initialize the output and cell_state for the LSTM cells for testing
+            initial_LSTM_outputs, initial_LSTM_cell_states = \
+                self.initialize_outputs_and_cell_states_for_LSTMs(len(test_data), self.LSTMs_state_size)
 
             test_logits = self.inference(
                 test_data, self.input_sequence_length, self.input_step_size,

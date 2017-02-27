@@ -126,7 +126,6 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         self.output_size = len(embryo_stages)
 
         self.k_fold_embryoIds = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
-        print "clusters"
         print self.k_fold_embryoIds
 
         self.k_fold_datasets = create_k_fold_datasets_with_clusters(

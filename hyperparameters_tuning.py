@@ -1,5 +1,6 @@
 import numpy as np
-from embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
+#from embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
+from cancer_data import CancerData, CancerDataWithClusters
 
 from feedforward_neural_network import FeedforwardNeuralNetwork
 from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
@@ -14,14 +15,14 @@ def MLP_hyperparameters_tuning():
     learning_rate = 0.05
     weight_decay = 0.01
 
-    epigeneticsData = EmbryoDevelopmentData(2, 512, 6.2)
+    epigeneticsData = CancerData(5)
 
     training_dataset, validation_dataset, test_dataset = epigeneticsData.get_training_validation_test_datasets()
 
     input_data_size = epigeneticsData.input_data_size
     output_size = epigeneticsData.output_size
 
-    ffnn = FeedforwardNeuralNetwork(input_data_size, [256, 128, 64, 32], output_size)
+    ffnn = FeedforwardNeuralNetwork(input_data_size, [64, 128, 32, 16], output_size)
 
     training_accuracy, validation_accuracy, steps_list, test_accuracy = ffnn.train_validate_test(
         training_dataset, validation_dataset, test_dataset,
@@ -37,13 +38,21 @@ def RNN_hyperparameters_tunning():
     # Training parameters
     RNN_learning_rate = 0.0001
     RNN_weight_decay = 0.02
-    epigeneticsData = EmbryoDevelopmentData(1, 256, 6.25)
+    #epigeneticsData = EmbryoDevelopmentData(1, 256, 6.25)
+
+    epigeneticsData = CancerData(5)
 
     training_dataset, validation_dataset, test_dataset = epigeneticsData.get_training_validation_test_datasets()
+
     input_data_size = epigeneticsData.input_data_size
     output_size = epigeneticsData.output_size
 
-    rnn = RecurrentNeuralNetwork(16, 16, [64, 128], [128, 64], output_size)
+
+    #rnn = RecurrentNeuralNetwork(16, 16, [64, 128], [128, 64], output_size)
+
+    print input_data_size
+    rnn = RecurrentNeuralNetwork(26, 2, [16, 32], [64, 16], output_size)
+
 
     training_accuracy, validation_accuracy, steps_list, test_accuracy = rnn.train_validate_test(
         training_dataset, validation_dataset, test_dataset,
@@ -53,17 +62,26 @@ def RNN_hyperparameters_tunning():
 
 
 def superlayeredNN_hyperparameters_tuning():
-    epigeneticsData = EmbryoDevelopmentDataWithClusters(2, 3, 256, 6)
+
+    #epigeneticsData = EmbryoDevelopmentDataWithClusters(2, 3, 256, 6)
+
+    epigeneticsData = CancerDataWithClusters(5)
     training_dataset, validation_dataset, test_dataset = epigeneticsData.get_training_validation_test_datasets()
     clusters_size = epigeneticsData.clusters_size
     print(clusters_size)
     output_size = epigeneticsData.output_size
 
-    superlayered_nn = SuperlayeredNeuralNetwork(
+    """superlayered_nn = SuperlayeredNeuralNetwork(
             [clusters_size[0], clusters_size[1]],
             [[512, 256, 128, 64], [512, 256, 128, 64]],
             [128, 64],
-            output_size)
+            output_size)"""
+
+    superlayered_nn = SuperlayeredNeuralNetwork(
+        [clusters_size[0], clusters_size[1]],
+        [[32, 128, 64, 16], [32, 128, 64, 16]],
+        [32, 16],
+        output_size)
 
     learning_rate = 0.02
     weight_decay = 0.01
@@ -91,6 +109,9 @@ def plot_training_accuracy_and_validation_accuracy(training_accuracy, validation
     plt.show()
 
 
-RNN_hyperparameters_tunning()
-MLP_hyperparameters_tuning()
 superlayeredNN_hyperparameters_tuning()
+
+MLP_hyperparameters_tuning()
+
+RNN_hyperparameters_tunning()
+

@@ -1,7 +1,6 @@
 import math
 import numpy as np
 from gene_clustering import hierarchical_clustering
-from epigenetic_data import EpigeneticData
 from embryo_development_datasets import *
 
 # Set the gene entropy threshold for selecting the gene

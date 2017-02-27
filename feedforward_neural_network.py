@@ -228,7 +228,6 @@ class FeedforwardNeuralNetwork(object):
 
         return training_accuracy_list, validation_accuracy_list, steps_list, test_accuracy
 
-
     def initialize_weights_and_biases(self):
         """
         Initialize the weights for the neural network using He initialization and initialize the biases to zero
