@@ -1,13 +1,13 @@
 from embryo_development_data_processing import extract_training_validation_test_embryo_ids, \
     extract_data_from_embryo_stage_file, extract_embryo_id_to_gene_expressions, \
     extract_embryo_id_to_gene_expressions_clusters, extract_gene_id_to_gene_entropy_and_expression_levels, \
-    compute_clusters_size, create_one_hot_encoding
+    compute_clusters_size, create_one_hot_encoding, create_embryo_stage_to_embryo_ids
 from embryo_development_datasets import extract_training_validation_test_embryo_ids, create_k_fold_embryo_ids, \
     create_training_dataset, create_training_dataset_with_clusters, \
     create_validation_dataset, create_validation_dataset_with_clusters, \
     create_test_dataset, create_test_dataset_with_clusters, \
     create_k_fold_datasets, create_k_fold_datasets_with_clusters
-from epygenetic_data.epigenetic_data import EpigeneticData
+from epigenetic_data.epigenetic_data import EpigeneticData
 from gene_clustering.gene_clustering import hierarchical_clustering
 
 """
@@ -34,53 +34,36 @@ class EmbryoDevelopmentData(EpigeneticData):
 
         self.output_size = len(embryo_stages)
 
-        self.k_fold_embryoIds = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
+        k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
         print "non-clusters"
-        print self.k_fold_embryoIds
+        print k_fold_embryo_ids
 
         self.k_fold_datasets = create_k_fold_datasets(
-            self.num_folds, self.k_fold_embryoIds, self.input_data_size, self.output_size,
+            self.num_folds, k_fold_embryo_ids, self.input_data_size, self.output_size,
             self.embryo_id_to_gene_expressions, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
-        return self.k_fold_datasets
+        k_fold_datasets_hyperparameters_tuning = dict()
 
-    def get_training_validation_test_datasets(self):
-        training_embryo_ids, validation_embryo_ids, test_embryo_ids = \
-            extract_training_validation_test_embryo_ids(self.embryo_stage_to_embryo_ids)
+        for index_i in range(self.num_folds):
+            training_embryo_ids = []
+            for index_j in range(self.num_folds):
+                if index_j != index_i:
+                    training_embryo_ids += k_fold_embryo_ids[index_j]
 
-        embryoIds = self.embryo_id_to_embryo_stage.keys()
-        self.input_data_size = len(self.embryo_id_to_gene_expressions[embryoIds[0]])
+            embryo_stage_to_embryo_ids = create_embryo_stage_to_embryo_ids(
+                training_embryo_ids, self.embryo_id_to_embryo_stage)
+            k_fold_embryo_ids_hyperparameters_tuning = create_k_fold_embryo_ids(
+                self.num_folds_hyperparameters_tuning, embryo_stage_to_embryo_ids)
 
-        embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+            k_fold_dataset = create_k_fold_datasets(
+                self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
+                self.input_data_size, self.output_size,
+                self.embryo_id_to_gene_expressions, self.embryo_stage_to_one_hot_encoding,
+                self.embryo_id_to_embryo_stage)
 
-        self.output_size = len(embryo_stages)
+            k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
 
-        training_dataset = create_training_dataset(
-            training_embryo_ids,
-            self.input_data_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        validation_dataset = create_validation_dataset(
-            validation_embryo_ids,
-            self.input_data_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        test_dataset = create_test_dataset(
-            test_embryo_ids,
-            self.input_data_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        return training_dataset, validation_dataset, test_dataset
+        return self.k_fold_datasets, k_fold_datasets_hyperparameters_tuning
 
     def extract_data_from_embryo_stage_file(self):
         embryo_stage_file = open('data/epigenetics_data/human_early_embryo_stage.txt', 'r')
@@ -132,52 +115,34 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
         self.output_size = len(embryo_stages)
 
-        self.k_fold_embryoIds = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
+        k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
         print "clusters"
-        print self.k_fold_embryoIds
+        print k_fold_embryo_ids
 
-        self.k_fold_datasets = create_k_fold_datasets_with_clusters(
-            self.num_folds, self.k_fold_embryoIds, self.clusters_size, self.output_size,
+        k_fold_datasets = create_k_fold_datasets_with_clusters(
+            self.num_folds, k_fold_embryo_ids, self.clusters_size, self.output_size,
             self.embryo_id_to_gene_expressions_clusters, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
+        k_fold_datasets_hyperparameters_tuning = dict()
 
-        return self.k_fold_datasets
+        for index_i in range(self.num_folds):
+            training_embryo_ids = []
+            for index_j in range(self.num_folds):
+                if index_j != index_i:
+                    training_embryo_ids += k_fold_embryo_ids[index_j]
 
+            embryo_stage_to_embryo_ids  = create_embryo_stage_to_embryo_ids(
+                training_embryo_ids, self.embryo_id_to_embryo_stage)
+            k_fold_embryo_ids_hyperparameters_tuning = create_k_fold_embryo_ids(
+                self.num_folds_hyperparameters_tuning, embryo_stage_to_embryo_ids)
 
-    def get_training_validation_test_datasets(self):
-        training_embryo_ids, validation_embryo_ids, test_embryo_ids = \
-            extract_training_validation_test_embryo_ids(self.embryo_stage_to_embryo_ids)
+            k_fold_dataset = create_k_fold_datasets_with_clusters(
+                self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
+                self.clusters_size, self.output_size,
+                self.embryo_id_to_gene_expressions, self.embryo_stage_to_one_hot_encoding,
+                self.embryo_id_to_embryo_stage)
 
-        embryoIds = self.embryo_id_to_embryo_stage.keys()
-        self.input_data_size = len(self.embryo_id_to_gene_expressions[embryoIds[0]])
+            k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
 
-        embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+        return k_fold_datasets, k_fold_datasets_hyperparameters_tuning
 
-        self.output_size = len(embryo_stages)
-
-        training_dataset = create_training_dataset_with_clusters(
-            training_embryo_ids,
-            self.clusters_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions_clusters,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        validation_dataset = create_validation_dataset_with_clusters(
-            validation_embryo_ids,
-            self.clusters_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions_clusters,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        test_dataset = create_test_dataset_with_clusters(
-            test_embryo_ids,
-            self.clusters_size,
-            self.output_size,
-            self.embryo_id_to_gene_expressions_clusters,
-            self.embryo_stage_to_one_hot_encoding,
-            self.embryo_id_to_embryo_stage)
-
-        return training_dataset, validation_dataset, test_dataset

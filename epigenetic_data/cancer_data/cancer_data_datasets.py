@@ -12,6 +12,7 @@ def compute_probability_distribution(input_values):
     """
 
     input_values_sum = 0.0
+
     for input_value in input_values:
         input_values_sum += float(input_value)
     normalized_input_values = range(len(input_values))

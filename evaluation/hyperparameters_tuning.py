@@ -1,7 +1,7 @@
 #from embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
 import matplotlib.pyplot as plt
 
-from epygenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
+from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
 from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork

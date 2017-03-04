@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from epygenetic_data.embryo_development_data.embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
+from epigenetic_data.embryo_development_data.embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
+from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
+
 from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
@@ -15,9 +17,15 @@ def cross_validate_MLP():
     learning_rate = 0.05
     weight_decay = 0.01
 
-    epigeneticsData = EmbryoDevelopmentData(num_folds, 256, 6.2)
+    #epigeneticsData = EmbryoDevelopmentData(num_folds, 256, 6.2)
 
-    k_fold_datasets = epigeneticsData.get_k_fold_datasets()
+    epigeneticsData = CancerData(num_folds, 3)
+
+    k_fold_datasets, k_fold_datasets_hyperparameter = epigeneticsData.get_k_fold_datasets()
+
+    print k_fold_datasets[0]
+    print k_fold_datasets_hyperparameter[0]
+
     input_data_size = epigeneticsData.input_data_size
     output_size = epigeneticsData.output_size
 
@@ -91,8 +99,13 @@ def cross_validate_RNN():
 
 def cross_validate_superlayeredNN():
 
-    epigeneticsData = EmbryoDevelopmentDataWithClusters(2, num_folds, 256, 6)
-    k_fold_datasets_with_clusters = epigeneticsData.get_k_fold_datasets()
+
+    epigeneticsData = CancerDataWithClusters(num_folds, 3)
+    k_fold_datasets_with_clusters, k_fold_datasets_hyperparameters = epigeneticsData.get_k_fold_datasets()
+
+    print k_fold_datasets_with_clusters[0]
+    print k_fold_datasets_hyperparameters[0]
+
     clusters_size = epigeneticsData.clusters_size
     print(clusters_size)
     output_size = epigeneticsData.output_size
@@ -127,13 +140,13 @@ def cross_validate_superlayeredNN():
         losses.append(loss)
         print "key number" + str(key)
 
-    return validation_accuracies, training_accuracies, losses
+    #return validation_accuracies, training_accuracies, losses
 
 #epi_data = EmbryoDevelopmentDataWithClusters(2, 4, 16, 6.3)
 #plot_dendogram(epi_data.geneId_to_expression_levels)
 
 
-confussion_matrix = cross_validate_MLP()
+cross_validate_superlayeredNN()
 
 
 

@@ -261,4 +261,14 @@ def extract_training_validation_test_embryo_ids(embryo_stage_to_embryo_ids):
     return training_embryo_ids, validation_embryo_ids, test_embryo_ids
 
 
+def create_embryo_stage_to_embryo_ids(embryo_ids, embryo_id_to_embryo_stage):
+    embryo_stage_to_embryo_ids = dict()
 
+    for embryo_id in embryo_ids:
+        embryo_stage = embryo_id_to_embryo_stage[embryo_id]
+        if embryo_stage in embryo_id_to_embryo_stage.keys():
+            embryo_stage_to_embryo_ids[embryo_stage] += [embryo_id]
+        else:
+            embryo_stage_to_embryo_ids[embryo_stage] = [embryo_id]
+
+    return embryo_stage_to_embryo_ids

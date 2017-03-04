@@ -55,3 +55,18 @@ def create_one_hot_encoding(labels):
         label_to_one_hot_encoding[labels[index]] = one_hot_encoding
 
     return label_to_one_hot_encoding
+
+
+def create_label_to_patient_ids(patient_ids, patient_id_to_label):
+    label_to_patient_ids = dict()
+
+    for patient_id in patient_ids:
+        label = patient_id_to_label[patient_id]
+
+        if label in label_to_patient_ids.keys():
+            label_to_patient_ids[label] += [patient_id]
+        else:
+            label_to_patient_ids[label] = [patient_id]
+
+
+    return label_to_patient_ids

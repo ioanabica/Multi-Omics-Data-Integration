@@ -501,7 +501,7 @@ class SuperlayeredNeuralNetwork(object):
         :param labels:
         :return:
         """
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         L2_loss = tf.nn.l2_loss(weights['s1']['weights_input_layer']) + \
                   tf.nn.l2_loss(weights['s1']['weights_first_hidden_layer']) + \
                   tf.nn.l2_loss(weights['s1']['weights_second_hidden_layer']) + \
