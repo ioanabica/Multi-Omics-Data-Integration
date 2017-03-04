@@ -7,6 +7,26 @@ import math
 # Number of k folds
 #k = 6
 
+def compute_probability_distribution(input_values):
+    """
+    Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
+    to the neural network architectures.
+
+    :param (list) input_values :  The un-normalized gene expression profile for a training example
+    :return (list): normalized_input_values: The normalized gene expression profile for a training
+             example
+    """
+
+    input_values_sum = 0.0
+    for input_value in input_values:
+        input_values_sum += float(input_value)
+    normalized_input_values = range(len(input_values))
+
+    if input_values_sum != 0:
+        for index in range(len(input_values)):
+            normalized_input_values[index] = float(input_values[index])/input_values_sum
+
+    return normalized_input_values
 
 def compute_gene_entropy(gene_expressions):
     """

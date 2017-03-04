@@ -1,10 +1,11 @@
-from epigenetic_data import EpigeneticData
-from cancer_data_processing import extract_patients_data, create_one_hot_encoding
 from cancer_data_datasets import extract_training_validation_test_patient_ids, create_k_fold_patient_ids, \
     create_training_dataset, create_training_dataset_with_clusters, \
     create_test_dataset, create_test_dataset_with_clusters, \
     create_validation_dataset, create_validation_dataset_with_clusters, \
     create_k_fold_datasets, create_k_fold_datasets_with_clusters
+from cancer_data_processing import extract_patients_data, create_one_hot_encoding
+from epygenetic_data.epigenetic_data import EpigeneticData
+
 
 class CancerData(EpigeneticData):
 

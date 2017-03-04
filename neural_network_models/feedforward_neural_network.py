@@ -56,7 +56,6 @@ class FeedforwardNeuralNetwork(object):
             # create placeholder for the keep probability
             # dropout is used during training, but not during testing
             tf_keep_probability = tf.placeholder(tf.float32)
-            tf.scalar_summary('dropout_keep_probability', keep_probability)
 
             weights, biases = self.initialize_weights_and_biases()
 
@@ -68,7 +67,6 @@ class FeedforwardNeuralNetwork(object):
             training_predictions = tf.nn.softmax(logits)
             validation_predictions = tf.nn.softmax(self.inference(validation_data, weights, biases, tf_keep_probability))
 
-            merged_summary = tf.merge_all_summaries()
 
         steps = 10000
 
@@ -76,8 +74,6 @@ class FeedforwardNeuralNetwork(object):
 
             # initialize weights and biases
             tf.initialize_all_variables().run()
-
-            summary_writer = tf.train.SummaryWriter(logs_path, graph)
 
             for step in range(steps):
 
@@ -91,10 +87,8 @@ class FeedforwardNeuralNetwork(object):
                     tf_input_data, tf_input_labels, tf_keep_probability,
                     minibatch_data, minibatch_labels, keep_probability)
 
-                _, loss, predictions, summary = session.run(
-                    [optimizer, training_loss, training_predictions, merged_summary], feed_dict=feed_dictionary)
-
-                summary_writer.add_summary(summary, step)
+                _, loss, predictions = session.run(
+                    [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
 
                 if (step % 500 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
@@ -368,7 +362,7 @@ class FeedforwardNeuralNetwork(object):
         :param weights
         :return:
         """
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         L2_loss = tf.nn.l2_loss(weights['weights_input_layer']) + \
                   tf.nn.l2_loss(weights['weights_first_hidden_layer']) + \
                   tf.nn.l2_loss(weights['weights_second_hidden_layer']) + \
@@ -376,7 +370,6 @@ class FeedforwardNeuralNetwork(object):
                   tf.nn.l2_loss(weights['weights_forth_hidden_layer'])
 
         loss = tf.reduce_mean(cross_entropy + L2_loss * weight_decay)
-        tf.scalar_summary('loss', loss)
 
         return loss
 

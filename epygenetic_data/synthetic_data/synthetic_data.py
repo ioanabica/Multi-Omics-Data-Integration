@@ -1,8 +1,7 @@
 import numpy as np
-import math
 
-from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
-from feedforward_neural_network import FeedforwardNeuralNetwork
+from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 
 
 num_classes = 7

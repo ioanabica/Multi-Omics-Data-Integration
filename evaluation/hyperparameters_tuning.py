@@ -1,12 +1,10 @@
-import numpy as np
 #from embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
-from cancer_data import CancerData, CancerDataWithClusters
-
-from feedforward_neural_network import FeedforwardNeuralNetwork
-from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
-from superlayered_neural_network import SuperlayeredNeuralNetwork
-
 import matplotlib.pyplot as plt
+
+from epygenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
+from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
+from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
 
 def MLP_hyperparameters_tuning():

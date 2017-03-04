@@ -1,8 +1,7 @@
 import numpy as np
-import math
 
-from superlayered_neural_network import SuperlayeredNeuralNetwork
 from gene_clustering import hierarchical_clustering
+from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
 num_classes = 7
 num_clusters = 2

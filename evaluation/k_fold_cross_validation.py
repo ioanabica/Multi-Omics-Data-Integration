@@ -1,13 +1,10 @@
-import numpy as np
-from embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
-
-from feedforward_neural_network import FeedforwardNeuralNetwork
-from LSTM_recurrent_neural_network import RecurrentNeuralNetwork
-from superlayered_neural_network import SuperlayeredNeuralNetwork
-
-from gene_clustering import plot_dendogram, k_means_clustering
-
 import matplotlib.pyplot as plt
+import numpy as np
+
+from epygenetic_data.embryo_development_data.embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
+from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
+from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
 num_folds = 3
 
