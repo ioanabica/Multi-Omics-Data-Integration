@@ -120,7 +120,8 @@ class RecurrentNeuralNetwork(object):
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
-            tf.initialize_all_variables().run()
+            init = tf.global_variables_initializer()
+            session.run(init)
 
             for step in range(steps):
 
@@ -271,7 +272,8 @@ class RecurrentNeuralNetwork(object):
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
-            tf.initialize_all_variables().run()
+            init = tf.global_variables_initializer()
+            session.run(init)
 
             for step in range(steps):
 
@@ -538,7 +540,7 @@ class RecurrentNeuralNetwork(object):
 
         input_data = tf.transpose(input_data, [1, 0, 2])
         input_data = tf.reshape(input_data, [-1, input_step_size])
-        input_data = tf.split(0, input_sequence_length, input_data)
+        input_data = tf.split(input_data, input_sequence_length, 0)
 
         RNN_outputs = list()
         LSTM_1_output = outputs['LSTM_1']
@@ -609,7 +611,7 @@ class RecurrentNeuralNetwork(object):
         :param labels:
         :return:
         """
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, labels)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         MLP_L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
                       tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer']) + \
                       tf.nn.l2_loss(weights['MLP']['MLP_second_hidden_layer'])
@@ -650,3 +652,14 @@ class RecurrentNeuralNetwork(object):
                 num_correct_labels += 1
 
         return (100 * num_correct_labels) / predictions.shape[0]
+
+    def compute_confussion_matrix(self, predictions, labels):
+
+        confusion_matrix = np.zeros(shape=(self.output_size, self.output_size))
+        for index in range(predictions.shape[0]):
+            predicted_class_index = np.argmax(predictions[index])
+            actual_class_index = np.argmax(labels[index])
+
+            confusion_matrix[actual_class_index][predicted_class_index] += 1
+
+        return confusion_matrix

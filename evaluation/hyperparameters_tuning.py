@@ -2,9 +2,94 @@
 import matplotlib.pyplot as plt
 
 from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
-from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
+
+learning_rate_values = [0.01, 0.02, 0.03, 0.04, 0.05]
+learning_rate_values_for_RNN = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005]
+
+weight_decay_values = [0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
+
+keep_probability_values = [0.25, 0.35, 0.5, 0.75, 0.8]
+
+
+def choose_hyperparameters(network, training_dataset, validation_dataset):
+
+    dropout = choose_dropout(network, training_dataset, validation_dataset, 0.05, 0.01)
+    weight_decay = choose_weight_decay(network, training_dataset, validation_dataset, 0.05, dropout)
+    learning_rate = choose_learning_rate(network, training_dataset, validation_dataset, weight_decay, dropout)
+
+    return learning_rate, weight_decay, dropout
+
+
+def choose_hyperparameters_for_RNN(network, training_dataset, validation_dataset):
+
+    dropout = choose_dropout(network, training_dataset, validation_dataset, 0.05, 0.01)
+    weight_decay = choose_weight_decay(network, training_dataset, validation_dataset, 0.05, dropout)
+    learning_rate = choose_learning_rate(network, training_dataset, validation_dataset, weight_decay, dropout)
+
+    return learning_rate, weight_decay, dropout
+
+
+def choose_dropout(network, training_dataset, validation_dataset, fixed_learning_rate, fixed_weight_decay):
+    max_validation_accuracy = 0
+    best_keep_probability = 0
+
+    for keep_probability in keep_probability_values:
+        validation_accuracy =  network.train_and_validate(
+            training_dataset, validation_dataset, fixed_learning_rate, fixed_weight_decay, keep_probability)
+        if validation_accuracy > max_validation_accuracy:
+            best_keep_probability = keep_probability
+
+    return best_keep_probability
+
+
+def choose_weight_decay(network, training_dataset, validation_dataset, fixed_learning_rate, fixed_dropout):
+
+    max_validation_accuracy = 0
+    best_weight_decay = 0
+
+    for weight_decay in weight_decay_values:
+        validation_accuracy = network.train_and_validate(
+            training_dataset, validation_dataset, fixed_learning_rate, weight_decay, fixed_dropout)
+        if validation_accuracy > max_validation_accuracy:
+            best_weight_decay = weight_decay
+
+    return best_weight_decay
+
+
+def choose_learning_rate(network, training_dataset, validation_dataset, fixed_weight_decay, fixed_dropout):
+
+    max_validation_accuracy = 0
+    best_learning_rate = 0
+
+    for learning_rate in learning_rate_values:
+        validation_accuracy = network.train_and_evaluate(
+            training_dataset, validation_dataset, learning_rate, fixed_weight_decay, fixed_dropout)
+        if validation_accuracy >  max_validation_accuracy:
+            best_learning_rate = learning_rate
+
+    return best_learning_rate
+
+
+def choose_learning_rate_for_RNN(network, training_dataset, validation_dataset, fixed_weight_decay, fixed_dropout):
+
+    max_validation_accuracy = 0
+    best_learning_rate = 0
+
+    for learning_rate in learning_rate_values_for_RNN:
+        validation_accuracy = network.train_and_evaluate(
+            training_dataset, validation_dataset, learning_rate, fixed_weight_decay, fixed_dropout)
+        if validation_accuracy >  max_validation_accuracy:
+            best_learning_rate = learning_rate
+
+    return best_learning_rate
+
+
+
+
+
 
 
 def MLP_hyperparameters_tuning():
@@ -22,7 +107,7 @@ def MLP_hyperparameters_tuning():
 
     ffnn = FeedforwardNeuralNetwork(input_data_size, [64, 128, 32, 16], output_size)
 
-    training_accuracy, validation_accuracy, steps_list, test_accuracy = ffnn.train_validate_test(
+    training_accuracy, validation_accuracy, steps_list, test_accuracy = ffnn.train_and_validate(
         training_dataset, validation_dataset, test_dataset,
         learning_rate, weight_decay, keep_probability)
 

@@ -95,7 +95,8 @@ class SuperlayeredNeuralNetwork(object):
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
-            tf.initialize_all_variables().run()
+            init = tf.global_variables_initializer()
+            session.run(init)
 
             for step in range(steps):
 
@@ -529,3 +530,14 @@ class SuperlayeredNeuralNetwork(object):
                 num_correct_labels += 1
 
         return (100 * num_correct_labels) / predictions.shape[0]
+
+    def compute_confussion_matrix(self, predictions, labels):
+
+        confusion_matrix = np.zeros(shape=(self.output_size, self.output_size))
+        for index in range(predictions.shape[0]):
+            predicted_class_index = np.argmax(predictions[index])
+            actual_class_index = np.argmax(labels[index])
+
+            confusion_matrix[actual_class_index][predicted_class_index] += 1
+
+        return confusion_matrix

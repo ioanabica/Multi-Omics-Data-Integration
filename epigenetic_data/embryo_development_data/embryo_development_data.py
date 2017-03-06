@@ -1,14 +1,10 @@
-from embryo_development_data_processing import extract_training_validation_test_embryo_ids, \
-    extract_data_from_embryo_stage_file, extract_embryo_id_to_gene_expressions, \
+from embryo_development_data_processing import extract_data_from_embryo_stage_file, extract_embryo_id_to_gene_expressions, \
     extract_embryo_id_to_gene_expressions_clusters, extract_gene_id_to_gene_entropy_and_expression_levels, \
     compute_clusters_size, create_one_hot_encoding, create_embryo_stage_to_embryo_ids
-from embryo_development_datasets import extract_training_validation_test_embryo_ids, create_k_fold_embryo_ids, \
-    create_training_dataset, create_training_dataset_with_clusters, \
-    create_validation_dataset, create_validation_dataset_with_clusters, \
-    create_test_dataset, create_test_dataset_with_clusters, \
+from embryo_development_datasets import create_k_fold_embryo_ids, \
     create_k_fold_datasets, create_k_fold_datasets_with_clusters
 from epigenetic_data.epigenetic_data import EpigeneticData
-from gene_clustering.gene_clustering import hierarchical_clustering
+from gene_clustering.hierarchical_clustering import hierarchical_clustering
 
 """
 Class that extracts the data to perform supervised learning using the neural network architectures.

@@ -28,12 +28,14 @@ class FeedforwardNeuralNetwork(object):
         self.hidden_units = hidden_units
         self.output_size = output_size
 
-    def train_and_validate(self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
+    def train_and_evaluate(
+            self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
 
         :param training_dataset: dictionary containing the training data and training labels
         :param validation_dataset: dictionary containing the validation data and validation labels
+        :param batch_size:
         :param learning_rate:
         :param weight_decay:
         :param keep_probability:
@@ -73,7 +75,8 @@ class FeedforwardNeuralNetwork(object):
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
-            tf.initialize_all_variables().run()
+            init = tf.global_variables_initializer()
+            session.run(init)
 
             for step in range(steps):
 
@@ -110,8 +113,8 @@ class FeedforwardNeuralNetwork(object):
 
         return validation_accuracy, confussion_matrix
 
-    def train_validate_test(self, training_dataset, validation_dataset, test_dataset,
-                            learning_rate, weight_decay, keep_probability):
+    def train_and_validate(self, training_dataset, validation_dataset, test_dataset,
+                           learning_rate, weight_decay, keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
 
@@ -172,7 +175,8 @@ class FeedforwardNeuralNetwork(object):
         with tf.Session(graph=graph) as session:
 
             # initialize weights and biases
-            tf.initialize_all_variables().run()
+            init = tf.global_variables_initializer()
+            session.run(init)
 
             summary_writer = tf.train.SummaryWriter(logs_path, graph)
 
@@ -374,6 +378,7 @@ class FeedforwardNeuralNetwork(object):
         return loss
 
     def compute_predictions_accuracy(self, predictions, labels):
+
         """
         :param predictions: labels given by the feedforward neural network
         :param labels: correct labels for the input date

@@ -1,6 +1,6 @@
 import numpy as np
 
-from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 
 
@@ -147,7 +147,7 @@ class SyntheticData(object):
     validation_dataset = create_validation_dataset(class_id_to_shifted_genes)
 
     ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
-    validation_accurat = ffnn.train_and_validate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
+    validation_accurat = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
 
 
     rnn = RecurrentNeuralNetwork(32, 4, [64, 256], [256, 64], num_classes)

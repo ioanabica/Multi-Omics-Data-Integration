@@ -4,7 +4,7 @@ import numpy as np
 from epigenetic_data.embryo_development_data.embryo_development_data import EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters
 from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
 
-from neural_network_models.LSTM_recurrent_neural_network import RecurrentNeuralNetwork
+from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
@@ -45,7 +45,7 @@ def cross_validate_MLP():
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, ffnn_confussion_matrix = ffnn.train_and_validate(
+        validation_accuracy, ffnn_confussion_matrix = ffnn.train_and_evaluate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
         print confussion_matrix
@@ -63,13 +63,14 @@ def cross_validate_RNN():
     # Training parameters
     RNN_learning_rate = 0.0001
     RNN_weight_decay = 0.01
-    epigeneticsData = EmbryoDevelopmentData(num_folds, 256, 6.25)
 
-    k_fold_datasets = epigeneticsData.get_k_fold_datasets()
+    epigeneticsData = CancerData(num_folds, 3)
+    k_fold_datasets, k_fold_datasets_hyperparameter = epigeneticsData.get_k_fold_datasets()
+
     input_data_size = epigeneticsData.input_data_size
     output_size = epigeneticsData.output_size
 
-    rnn = RecurrentNeuralNetwork(16, 16, [64, 128], [128, 64], output_size)
+    rnn = RecurrentNeuralNetwork(26, 2, [64, 128], [128, 64], output_size)
 
     validation_accuracies = list()
     training_accuracies = list()
@@ -147,6 +148,7 @@ def cross_validate_superlayeredNN():
 
 
 cross_validate_superlayeredNN()
+cross_validate_RNN()
 
 
 
