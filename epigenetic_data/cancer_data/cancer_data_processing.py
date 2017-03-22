@@ -1,4 +1,6 @@
 
+
+
 def extract_patients_data(data_file):
 
     patient_id_to_gene_expressions = dict()

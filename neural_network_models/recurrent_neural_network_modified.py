@@ -13,6 +13,9 @@ batch_size = 16
 epsilon = 1e-3
 
 
+""" This model has two LSTM units and one fully connected layer"""
+
+
 class RecurrentNeuralNetwork(object):
     def __init__(self, input_sequence_length, input_step_size, LSTMs_state_size, hidden_units, output_size):
         self.input_sequence_length = input_sequence_length
@@ -105,7 +108,7 @@ class RecurrentNeuralNetwork(object):
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 20000
+        steps = 12000
         training_accuracy = list()
         losses = list()
         with tf.Session(graph=graph) as session:
@@ -357,6 +360,7 @@ class RecurrentNeuralNetwork(object):
 
         s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
                         compute_uv=True, full_matrices=False)
+
         memory_cell_pW = tf.Variable(tf.reshape(v, [num_units, num_units]))
 
         weights['LSTM_memory_cell_cW'] = memory_cell_cW
@@ -396,7 +400,6 @@ class RecurrentNeuralNetwork(object):
         biases = dict()
 
         hidden_units_1 = hidden_units[0]
-        hidden_units_2 = hidden_units[1]
 
         # weights for the input layer
         weights_input_layer = tf.Variable(
@@ -410,19 +413,9 @@ class RecurrentNeuralNetwork(object):
 
         # weights for first hidden layer
         weights_first_hidden_layer = tf.Variable(
-            tf.truncated_normal([hidden_units_1, hidden_units_2],
+            tf.truncated_normal([hidden_units_1, output_size],
                                 stddev=math.sqrt(2.0 / float(hidden_units_1))))
         weights['MLP_first_hidden_layer'] = weights_first_hidden_layer
-
-        # biases for the second hidden layer
-        biases_second_hidden_layer = tf.Variable(tf.zeros(hidden_units_2))
-        biases['MLP_second_hidden_layer'] = biases_second_hidden_layer
-
-        # weights for the second hidden layer
-        weights_second_hidden_layer = tf.Variable(
-            tf.truncated_normal([hidden_units_2, output_size],
-                                stddev=math.sqrt(2.0 / float(hidden_units_2))))
-        weights['MLP_second_hidden_layer'] = weights_second_hidden_layer
 
         # biases for output layer
         biases_output_layer = tf.Variable(tf.zeros(output_size))
@@ -503,17 +496,8 @@ class RecurrentNeuralNetwork(object):
             tf.nn.batch_normalization(input_to_first_hidden_layer, mean, variance, None, None, epsilon)),
             keep_probability)
 
-        # second hidden layer
-        input_to_second_hidden_layer = \
-            tf.matmul(first_hidden_layer, weights['MLP_first_hidden_layer']) + biases['MLP_second_hidden_layer']
-        mean, variance = tf.nn.moments(input_to_second_hidden_layer, [0])
-
-        second_hidden_layer = tf.nn.dropout(tf.nn.relu(
-            tf.nn.batch_normalization(input_to_second_hidden_layer, mean, variance, None, None, epsilon)),
-            keep_probability)
-
         # output layer
-        logits = tf.matmul(second_hidden_layer, weights['MLP_second_hidden_layer']) + biases['MLP_output_layer']
+        logits = tf.matmul(first_hidden_layer, weights['MLP_first_hidden_layer']) + biases['MLP_output_layer']
 
         return logits
 
@@ -605,8 +589,7 @@ class RecurrentNeuralNetwork(object):
         """
         cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         MLP_L2_loss = tf.nn.l2_loss(weights['MLP']['MLP_input_layer']) + \
-                      tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer']) + \
-                      tf.nn.l2_loss(weights['MLP']['MLP_second_hidden_layer'])
+                      tf.nn.l2_loss(weights['MLP']['MLP_first_hidden_layer'])
 
         LSTM_1_L2_loss = tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_cW']) + \
                          tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_pW']) + \

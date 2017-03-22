@@ -25,6 +25,9 @@ def find_closest_clusters(distance_matrix):
 
 
 def hierarchical_clustering(gene_id_to_expression_levels, min_num_clusters):
+
+    print 'using hierarchical clustering'
+
     gene_ids = gene_id_to_expression_levels.keys()
     gene_expressions = []
     for geneId in gene_ids:

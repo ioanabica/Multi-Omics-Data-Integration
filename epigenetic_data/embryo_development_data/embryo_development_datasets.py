@@ -175,10 +175,9 @@ def create_training_dataset_with_clusters(
 
     np.random.shuffle(training_embryo_ids)
     index = 0
-    print clusters_size
+
     for embryoId in training_embryo_ids:
         for cluster_id in range(len(clusters_size)):
-            print embryo_id_to_gene_expressions_clusters
             training_data[cluster_id][index, :] = \
                 compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
         training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
@@ -291,8 +290,6 @@ def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
             for index in range(k-1):
                 k_fold_embryoIds[index] += embryoIds[index*group_size:(index+1)*group_size]
             k_fold_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
-
-    print k_fold_embryoIds
 
     return k_fold_embryoIds
 

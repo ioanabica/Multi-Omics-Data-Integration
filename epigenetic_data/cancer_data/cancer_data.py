@@ -30,12 +30,12 @@ class CancerData(EpigeneticData):
         k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
         print k_fold_patient_ids
 
-        k_fold_datasets = create_k_fold_datasets(
+        self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_patient_ids, self.input_data_size, self.output_size,
             self.patient_id_to_gene_expressions_and_dna_methylation, self.label_to_one_hot_encoding,
             self.patient_id_to_label)
 
-        k_fold_datasets_hyperparameters_tuning = dict()
+        self.k_fold_datasets_hyperparameters_tuning = dict()
 
         for index_i in range(self.num_folds):
             training_patient_ids = []
@@ -55,9 +55,9 @@ class CancerData(EpigeneticData):
                 self.patient_id_to_gene_expressions_and_dna_methylation, self.label_to_one_hot_encoding,
                 self.patient_id_to_label)
 
-            k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
+            self.k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
 
-        return k_fold_datasets, k_fold_datasets_hyperparameters_tuning
+        return self.k_fold_datasets, self.k_fold_datasets_hyperparameters_tuning
 
 
 #data = CancerData(3)
@@ -106,12 +106,12 @@ class CancerDataWithClusters(CancerData):
 
         self.k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
 
-        k_fold_datasets = create_k_fold_datasets_with_clusters(
+        self.k_fold_datasets = create_k_fold_datasets_with_clusters(
             self.num_folds, self.k_fold_patient_ids, self.clusters_size, self.output_size,
             self.patient_id_to_input_clusters, self.label_to_one_hot_encoding,
             self.patient_id_to_label)
 
-        k_fold_datasets_hyperparameters_tuning = dict()
+        self.k_fold_datasets_hyperparameters_tuning = dict()
 
         for index_i in range(self.num_folds):
             training_patient_ids = []
@@ -130,6 +130,6 @@ class CancerDataWithClusters(CancerData):
                 self.patient_id_to_input_clusters, self.label_to_one_hot_encoding,
                 self.patient_id_to_label)
 
-            k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
+            self.k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
 
-        return k_fold_datasets, k_fold_datasets_hyperparameters_tuning
+        return self.k_fold_datasets, self.k_fold_datasets_hyperparameters_tuning

@@ -17,7 +17,6 @@ epsilon = 1e-3
 batch_size = 64
 
 
-
 logs_path = '/tmp/tensorboard'
 
 
@@ -35,7 +34,6 @@ class FeedforwardNeuralNetwork(object):
 
         :param training_dataset: dictionary containing the training data and training labels
         :param validation_dataset: dictionary containing the validation data and validation labels
-        :param batch_size:
         :param learning_rate:
         :param weight_decay:
         :param keep_probability:

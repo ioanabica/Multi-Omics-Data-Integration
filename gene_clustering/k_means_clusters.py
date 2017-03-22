@@ -56,6 +56,7 @@ def compute_new_centers(clusters, gene_id_to_expression_levels):
 
 
 def k_means_clustering(gene_id_to_expression_levels, num_clusters):
+    print "using k-means clustering"
 
     gene_ids = gene_id_to_expression_levels.keys()
     gene_expressions = []

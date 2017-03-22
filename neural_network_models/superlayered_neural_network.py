@@ -37,7 +37,7 @@ class SuperlayeredNeuralNetwork(object):
         self.merge_layers_size = merge_layers_size
         self.output_size = output_size
 
-    def train_and_validate(self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
+    def train_and_evaluate(self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
         This function is used for cross validation.
@@ -89,8 +89,6 @@ class SuperlayeredNeuralNetwork(object):
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
         steps = 6000
-        training_accuracy = []
-        losses = []
 
         with tf.Session(graph=graph) as session:
 
@@ -114,21 +112,28 @@ class SuperlayeredNeuralNetwork(object):
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
-                losses.append(loss)
 
-                if (step % 100 == 0):
+                if (step % 500 == 0):
                     print('Minibatch loss at step %d: %f' % (step, loss))
                     print('Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
             validation_feed_dictionary = self.create_feed_dictionary(
                 tf_s1_input_data, tf_s2_input_data, tf_output_labels, tf_keep_probability,
                 s1_validation_data, s2_validation_data, validation_labels, 1.0)
+
             validation_accuracy = self.compute_predictions_accuracy(
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
+            confussion_matrix = self.compute_confussion_matrix(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
             print('Validation accuracy: %.1f%%' % validation_accuracy)
-            return validation_accuracy, training_accuracy, losses
+
+        return validation_accuracy, confussion_matrix
+
+
+
+
 
     def train_validate_test(self, training_dataset, validation_dataset, test_dataset,
                             learning_rate, weight_decay, keep_probability):

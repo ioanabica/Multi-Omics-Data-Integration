@@ -141,8 +141,6 @@ def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, ge
         embryo_id_to_gene_expressions[embryo_id] = \
             compute_probability_distribution(embryo_id_to_gene_expressions[embryo_id])
 
-    print len(embryo_id_to_gene_expressions['GSM896803'])
-
     return embryo_id_to_gene_expressions
 
 
@@ -266,7 +264,7 @@ def create_embryo_stage_to_embryo_ids(embryo_ids, embryo_id_to_embryo_stage):
 
     for embryo_id in embryo_ids:
         embryo_stage = embryo_id_to_embryo_stage[embryo_id]
-        if embryo_stage in embryo_id_to_embryo_stage.keys():
+        if embryo_stage in embryo_stage_to_embryo_ids.keys():
             embryo_stage_to_embryo_ids[embryo_stage] += [embryo_id]
         else:
             embryo_stage_to_embryo_ids[embryo_stage] = [embryo_id]
