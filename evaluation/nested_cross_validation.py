@@ -43,6 +43,7 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
 
+        print ffnn_confussion_matrix
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
 
@@ -68,18 +69,20 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
     for key in keys:
 
         """ Inner cross-validation """
-        learning_rate, weight_decay, keep_probability = choose_hyperparameters(
-            network, k_fold_datasets_hyperparameters_tuning[key])
+        #learning_rate, weight_decay, keep_probability = choose_hyperparameters(
+            #network, k_fold_datasets_hyperparameters_tuning[key])
 
-        #learning_rate = 0.5
-        #weight_decay = 0.05
-        #keep_probability = 0.8
+        learning_rate = 0.05
+        weight_decay = 0.01
+        keep_probability = 0.8
 
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
 
         validation_accuracy, snn_confussion_matrix = network.train_and_evaluate(
             training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability)
+
+        print snn_confussion_matrix
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, snn_confussion_matrix)
@@ -108,9 +111,9 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         #learning_rate, weight_decay, keep_probability = choose_hyperparameters_for_RNN(
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
-        learning_rate = 0.001
+        learning_rate = 0.0001
         weight_decay = 0.01
-        keep_probability = 0.8
+        keep_probability = 0.7
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -124,12 +127,13 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, ffnn_confussion_matrix = network.train_and_evaluate(
+        validation_accuracy, rnn_confussion_matrix = network.train_and_evaluate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
+        print rnn_confussion_matrix
 
         validation_accuracy_list.append(validation_accuracy)
-        confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
+        confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
