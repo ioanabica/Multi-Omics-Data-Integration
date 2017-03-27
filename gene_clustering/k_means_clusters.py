@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from scipy.spatial.distance import pdist, squareform, euclidean, correlation
+from scipy.spatial.distance import correlation
 
 epsilon = 0.00001
 

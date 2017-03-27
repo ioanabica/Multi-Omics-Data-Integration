@@ -43,8 +43,7 @@ def normalize_data(data_point):
 def create_data_point(class_id, class_id_to_shifted_genes, num_genes, mean):
     stddev = 1
     data_point = np.random.normal(mean, stddev, num_genes)
-    shifted_mean = 1
-    #print data_point
+    shifted_mean = 5
 
     shifted_genes = class_id_to_shifted_genes[class_id]
 
@@ -140,7 +139,7 @@ def create_expression_profile(
     class_ids = class_id_to_shifted_genes.keys()
     expression_profile = list()
     stddev = 1
-    shifted_mean = 2
+    shifted_mean = 5
 
     for class_id in class_ids:
         gene_expression_level = np.random.normal(class_id_to_gene_expression_mean_value[class_id], stddev)
@@ -226,17 +225,20 @@ class SyntheticDataWithClusters(object):
         [cluster_1_num_genes, cluster_2_num_genes])
 
 
-    gene_id_to_cluster_id, clusters = hierarchical_clustering(data_for_clustering, 2)
-    print clusters
-
-
     superlayered_nn = SuperlayeredNeuralNetwork(
         [cluster_1_num_genes, cluster_2_num_genes],
         [[512, 256, 128, 64], [512, 256, 128, 64]],
         [128, 32],
         num_classes)
 
-    validation_accuraty = superlayered_nn.train_and_validate(
-        training_dataset_with_clusters, validation_dataset_with_clusters)
+
+    learning_rate = 0.05
+    weight_decay = 0.05
+    keep_probability = 0.5
 
 
+    validation_accuraty, confussion_matrix = superlayered_nn.train_and_evaluate(
+        training_dataset_with_clusters, validation_dataset_with_clusters, learning_rate, weight_decay, keep_probability)
+
+
+    print confussion_matrix

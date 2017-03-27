@@ -25,9 +25,9 @@ def choose_hyperparameters(network, k_fold_datasets):
 
 def choose_hyperparameters_for_RNN(network, k_fold_datasets):
 
-    keep_probability = choose_keep_probability(network, k_fold_datasets, 0.05, 0.01)
-    weight_decay = choose_weight_decay(network, k_fold_datasets, 0.05, keep_probability)
-    learning_rate = choose_learning_rate(network, k_fold_datasets, weight_decay, keep_probability)
+    keep_probability = choose_keep_probability(network, k_fold_datasets, 0.01, 0.001)
+    weight_decay = choose_weight_decay(network, k_fold_datasets, 0.001, keep_probability)
+    learning_rate = choose_learning_rate_for_RNN(network, k_fold_datasets, weight_decay, keep_probability)
 
     return learning_rate, weight_decay, keep_probability
 

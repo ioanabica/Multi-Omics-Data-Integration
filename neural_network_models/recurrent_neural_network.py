@@ -355,9 +355,10 @@ class RecurrentNeuralNetwork(object):
                          compute_uv=True, full_matrices=False)
         memory_cell_cW = tf.Variable(tf.reshape(v, [input_size, num_units]))
 
-        s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
+        """s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
                         compute_uv=True, full_matrices=False)
-        memory_cell_pW = tf.Variable(tf.reshape(v, [num_units, num_units]))
+        memory_cell_pW = tf.Variable(tf.reshape(v, [num_units, num_units]))"""
+        memory_cell_pW = tf.Variable(tf.diag(tf.ones(num_units)))
 
         weights['LSTM_memory_cell_cW'] = memory_cell_cW
         weights['LSTM_memory_cell_pW'] = memory_cell_pW

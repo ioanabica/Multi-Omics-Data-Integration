@@ -7,9 +7,7 @@ from hyperparameters_tuning import choose_hyperparameters, choose_hyperparameter
 def nested_cross_validation_on_MLP(network, epigenetic_data):
 
     k_fold_datasets, k_fold_datasets_hyperparameters_tuning = epigenetic_data.get_k_fold_datasets()
-
     output_size = epigenetic_data.output_size
-
     keys = k_fold_datasets.keys()
 
     confussion_matrix = np.zeros(shape=(output_size, output_size))
@@ -73,8 +71,8 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
         learning_rate = 0.05
-        weight_decay = 0.01
-        keep_probability = 0.8
+        weight_decay = 0.02
+        keep_probability = 0.6
 
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
@@ -95,7 +93,7 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 def nested_cross_validation_on_RNN(network, epigenetic_data):
 
     k_fold_datasets, k_fold_datasets_hyperparameters_tuning = epigenetic_data.get_k_fold_datasets()
-
+    print k_fold_datasets
     output_size = epigenetic_data.output_size
 
     keys = k_fold_datasets.keys()
@@ -110,10 +108,9 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
 
         #learning_rate, weight_decay, keep_probability = choose_hyperparameters_for_RNN(
             #network, k_fold_datasets_hyperparameters_tuning[key])
-
         learning_rate = 0.0001
         weight_decay = 0.01
-        keep_probability = 0.7
+        keep_probability = 0.5
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -138,7 +135,6 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
     return average_validation_accuracy, confussion_matrix
-
 
 
 def plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, RNN_validation_accuracy):
@@ -166,10 +162,6 @@ def plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, R
     plt.ylabel('Test Accuracy', fontsize=20)
 
     plt.show()
-
-
-#plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, RNN_validation_accuracy)
-
 
 def plot_losses(MLP_losses, SNN_losses, RNN_losses):
     plt.figure(1)
@@ -201,36 +193,4 @@ def plot_losses(MLP_losses, SNN_losses, RNN_losses):
 
     plt.show()
 
-#plot_losses(MLP_losses, SNN_losses, RNN_losses)
 
-
-"""
-
-
-for key in keys:
-    print "key number" + str(key)
-    training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
-
-    new_training_dataset = dict()
-    new_training_dataset["training_data"] = training_dataset["training_data"][0]
-    new_training_dataset["training_labels"] = training_dataset["training_labels"]
-    print len(new_training_dataset["training_data"])
-    print len(new_training_dataset["training_data"][0])
-
-    validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
-    new_validation_dataset = dict()
-    new_validation_dataset["validation_data"] = validation_dataset["validation_data"][0]
-    new_validation_dataset["validation_labels"] = validation_dataset["validation_labels"]
-
-    print len(new_validation_dataset["validation_data"])
-    print len(new_validation_dataset["validation_data"][0])
-
-    accuracy = rnn.train_and_validate(
-        new_training_dataset, new_validation_dataset)
-    validation_accuracy.append(accuracy)
-
-print validation_accuracy
-print numpy.mean(validation_accuracy)
-
-
-"""

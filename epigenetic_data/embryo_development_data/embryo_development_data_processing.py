@@ -7,28 +7,42 @@ import math
 # Number of k folds
 #k = 6
 
-def compute_probability_distribution(input_values):
+
+def compute_probability_distribution(gene_expressions):
     """
     Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
     to the neural network architectures.
 
-    :param (list) input_values :  The un-normalized gene expression profile for a training example
-    :return (list): normalized_input_values: The normalized gene expression profile for a training
+    :param (list) gene_expressions :  The un-normalized gene expression profile for a training example
+    :return (list): normalized_gene_expressions: The normalized gene expression profile for a training
              example
     """
 
-    input_values_sum = 0.0
-    for input_value in input_values:
-        input_values_sum += float(input_value)
-    normalized_input_values = range(len(input_values))
+    gene_expressions_sum = 0.0
+    for gene_expression in gene_expressions:
+        gene_expressions_sum += float(gene_expression)
+    normalized_gene_expressions = range(len(gene_expressions))
 
-    if input_values_sum != 0:
-        for index in range(len(input_values)):
-            normalized_input_values[index] = float(input_values[index])/input_values_sum
+    if gene_expressions_sum != 0:
+        for index in range(len(gene_expressions)):
+            normalized_gene_expressions[index] = float(gene_expressions[index])/gene_expressions_sum
 
-    return normalized_input_values
+    return normalized_gene_expressions
 
-def compute_gene_entropy(gene_expressions):
+
+def convert_to_float(line_elements):
+    """
+    The elements read from the file are in string format. This function converts them to float.
+    """
+
+    input_values = range(len(line_elements))
+    for index in range(len(input_values)):
+        input_values[index] = float(line_elements[index])
+
+    return input_values
+
+
+def compute_gene_entropy(gene_expression):
     """
     Computes the entropy of the gene using the formula:
             entropy = sum_i (- g_i * log(g_i))
@@ -37,12 +51,12 @@ def compute_gene_entropy(gene_expressions):
     The entropy of the gene is useful in determining which genes change their values a lot over the stages of
     embryonic development.
 
-    :param (list) gene_expressions: an array containing the gene expression levels
+    :param (list) gene_expression: an array containing the gene expression levels
     :return (float): gene_entropy: a float representing the entropy of the gene expression levels
 
     """
     gene_entropy = 0.0
-    for gene_expression in gene_expressions:
+    for gene_expression in gene_expression:
         if float(gene_expression) > 0.0:
             gene_entropy -= float(gene_expression) * math.log(float(gene_expression), 2)
 
@@ -95,12 +109,12 @@ def extract_gene_id_to_gene_entropy_and_expression_levels(data_file, gene_entrop
 
         if (gene_entropy > gene_entropy_threshold) & (num_genes < max_num_genes):
             num_genes += 1
-            gene_id_to_expression_levels[line_elements[0]] = line_elements[1:]
+            gene_id_to_expression_levels[line_elements[0]] = convert_to_float(line_elements[1:])
 
     return gene_id_to_gene_entropy, gene_id_to_expression_levels
 
 
-def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, gene_entropy_threshold, max_num_genes):
+def extract_embryo_id_to_gene_expression(data_file, gene_id_to_gene_entropy, gene_entropy_threshold, max_num_genes):
     """
     Creates a dictionary that maps each embryo_id to the corresponding list of gene expression levels.
     The order of the genes whose expression levels are in the list is the same for every embryo.
@@ -116,40 +130,41 @@ def extract_embryo_id_to_gene_expressions(data_file, gene_id_to_gene_entropy, ge
                                            of the input data to the neural networks
     :param (integer) max_num_genes: the maximum number of genes whose expression levels can be used as
                                     inputs to the neural networks
-    :return (dictionary): embryo_id_to_gene_expressions
+    :return (dictionary): embryo_id_to_gene_expression
     """
 
-    embryo_id_to_gene_expressions = dict()
+    embryo_id_to_gene_expression = dict()
 
     """ Read the first line of the input file and create an entry in the dictionary for each embryo_id. """
     embryo_ids = (data_file.readline()).split()
     embryo_ids = embryo_ids[1:]
 
     for embryo_id in embryo_ids:
-        embryo_id_to_gene_expressions[embryo_id] = []
+        embryo_id_to_gene_expression[embryo_id] = []
 
     num_genes = 0
     for line in data_file:
         line_elements = line.split()
+
         if (gene_id_to_gene_entropy[line_elements[0]] > gene_entropy_threshold) & (num_genes < max_num_genes) & \
                 (len(line_elements) == len(embryo_ids) + 1):
             num_genes += 1
             for index in range(len(embryo_ids)):
-                embryo_id_to_gene_expressions[embryo_ids[index]] += [line_elements[index + 1]]
+                embryo_id_to_gene_expression[embryo_ids[index]] += [line_elements[index + 1]]
 
     for embryo_id in embryo_ids:
-        embryo_id_to_gene_expressions[embryo_id] = \
-            compute_probability_distribution(embryo_id_to_gene_expressions[embryo_id])
+        embryo_id_to_gene_expression[embryo_id] = \
+            convert_to_float(embryo_id_to_gene_expression[embryo_id])
 
-    return embryo_id_to_gene_expressions
+    return embryo_id_to_gene_expression
 
 
-def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster_id):
+def extract_embryo_id_to_gene_expression_clusters(data_file, gene_id_to_cluster_id):
     """
     Creates a dictionary that maps each embryo_id to the corresponding dictionary that contains the mapping from
     the cluster_id to the gene expression levels in the cluster. For example, by considering 2 embryos and 2 clusters,
     where the first cluster consists of gene_1 and gene_2 and the second cluster consists of gene_3 and gene_4,
-    the embryo_id_to_gene_expressions_clusters_dictionary will have the form:
+    the embryo_id_to_gene_expression_clusters_dictionary will have the form:
 
     {'embryo_1': {'0': [normalized_expressions_level_gene_1, normalized_expression_level_gene_2],
     '1': [normalized_expression_level_gene_3, normalized_expression_level_gene_4]},
@@ -166,10 +181,10 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
 
     :param (file) data_file
     :param (dictionary) gene_id_to_cluster_id: the cluster assignments for each gene
-    :return (dictionary): embryo_id_to_gene_expressions_clusters
+    :return (dictionary): embryo_id_to_gene_expression_clusters
     """
 
-    embryo_id_to_gene_expressions_clusters = dict()
+    embryo_id_to_gene_expression_clusters = dict()
     gene_ids = gene_id_to_cluster_id.keys()
     max_cluster_id = max(gene_id_to_cluster_id.values()) + 1
 
@@ -179,9 +194,9 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
     embryo_ids = embryo_ids[1:]
 
     for embryo_id in embryo_ids:
-        embryo_id_to_gene_expressions_clusters[embryo_id] = dict()
+        embryo_id_to_gene_expression_clusters[embryo_id] = dict()
         for cluster_id in range(max_cluster_id):
-            embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = []
+            embryo_id_to_gene_expression_clusters[embryo_id][cluster_id] = []
 
 
     for line in data_file:
@@ -189,15 +204,15 @@ def extract_embryo_id_to_gene_expressions_clusters(data_file, gene_id_to_cluster
         if (line_elements[0] in gene_ids) & (len(line_elements) == len(embryo_ids) + 1):
             cluster_id = gene_id_to_cluster_id[line_elements[0]]
             for index in range(len(embryo_ids)):
-                embryo_id_to_gene_expressions_clusters[embryo_ids[index]][cluster_id] += \
+                embryo_id_to_gene_expression_clusters[embryo_ids[index]][cluster_id] += \
                     [line_elements[index + 1]]
 
     for embryo_id in embryo_ids:
         for cluster_id in range(max_cluster_id):
-            embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id] = \
-                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryo_id][cluster_id])
+            embryo_id_to_gene_expression_clusters[embryo_id][cluster_id] = \
+                convert_to_float(embryo_id_to_gene_expression_clusters[embryo_id][cluster_id])
 
-    return embryo_id_to_gene_expressions_clusters
+    return embryo_id_to_gene_expression_clusters
 
 
 def create_one_hot_encoding(embryo_stages):

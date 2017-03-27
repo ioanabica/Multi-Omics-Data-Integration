@@ -5,7 +5,7 @@ from neural_network_models.feedforward_neural_network import FeedforwardNeuralNe
 
 
 num_classes = 7
-num_genes = 128
+num_genes = 256
 num_shifted_genes = 16
 training_examples_for_class = 10
 validation_examples_for_class = 2
@@ -146,12 +146,19 @@ class SyntheticData(object):
     training_dataset = create_training_dataset(class_id_to_shifted_genes)
     validation_dataset = create_validation_dataset(class_id_to_shifted_genes)
 
-    ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
-    validation_accurat = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
+    #ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
+    #validation_accuracy = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
 
 
-    rnn = RecurrentNeuralNetwork(32, 4, [64, 256], [256, 64], num_classes)
+    recurrent_neural_network = RecurrentNeuralNetwork(
+        input_sequence_length=16, input_step_size=16,
+        LSTMs_state_size=[64, 256], hidden_units=[128, 64],
+        output_size=num_classes)
 
+    learning_rate = 0.0001
+    weight_decay = 0.01
+    keep_probability = 0.7
 
-    validation_accuracy = rnn.train_and_validate(training_dataset, validation_dataset)
-
+    validation_accuracy, ffnn_confussion_matrix = recurrent_neural_network.train_and_evaluate(
+        training_dataset, validation_dataset,
+        learning_rate, weight_decay, keep_probability)

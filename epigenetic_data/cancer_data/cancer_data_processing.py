@@ -1,6 +1,5 @@
 
 
-
 def extract_patients_data(data_file):
 
     patient_id_to_gene_expressions = dict()
@@ -12,9 +11,7 @@ def extract_patients_data(data_file):
     label_to_patient_ids['cancer'] = list()
     label_to_patient_ids['not cancer'] = list()
 
-
     num_patients = int(data_file.readline())
-    print num_patients
     data_file.readline()
     data_file.readline()
 
@@ -42,10 +39,9 @@ def extract_patients_data(data_file):
 
         data_file.readline()
 
-    print patient_id_to_gene_expressions_and_dna_methlation
-
     return patient_id_to_gene_expressions, patient_id_to_dna_methilation, \
            patient_id_to_gene_expressions_and_dna_methlation, patient_id_to_label, label_to_patient_ids
+
 
 
 def create_one_hot_encoding(labels):

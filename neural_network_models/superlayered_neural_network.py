@@ -26,7 +26,7 @@ epsilon = 1e-3
 # Training parameters
 #learning_rate = 0.05
 #weight_decay = 0.01
-batch_size = 64
+batch_size = 32
 
 
 class SuperlayeredNeuralNetwork(object):
