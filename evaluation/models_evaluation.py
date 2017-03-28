@@ -14,6 +14,8 @@ from evaluation.nested_cross_validation import nested_cross_validation_on_MLP, n
 
 def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster):
 
+    print "USING EPIGENETIC DATA"
+    #print "USING EPIGENETIC DATA FOR SINGLE CLUSTER +++++"
     average_accuracy, confussion_matrix = evaluate_recurrent_neural_network(epigenetic_data)
     print average_accuracy, confussion_matrix
 
@@ -93,27 +95,27 @@ def evaluate_recurrent_neural_network(epigenetic_data):
 def get_embryo_development_data():
 
     noise_mean = 0
-    noise_stddev = 0.01
+    noise_stddev = 1
 
     print "Noise Characteristics"
     print noise_mean
     print noise_stddev
 
     epigenetic_data = EmbryoDevelopmentData(
-        num_folds=5, num_folds_hyperparameters_tuning=3, max_num_genes=256, gene_entropy_threshold=6.25)
-    #epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
+        num_folds=5, num_folds_hyperparameters_tuning=3, max_num_genes=256, gene_entropy_threshold=6.2)
+    epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_with_clusters = EmbryoDevelopmentDataWithClusters(
-        num_clusters=2, clustering_algorithm='hierarchical_clustering',
+        num_clusters=2, clustering_algorithm='hierarchical',
         num_folds=5, num_folds_hyperparameters_tuning=3,
-        max_num_genes=120, gene_entropy_threshold=6.3)
-    #epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
+        max_num_genes=500, gene_entropy_threshold=6.0)
+    epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_for_single_cluster = EmbryoDevelopmentDataWithSingleCluster(
-        num_clusters=2, clustering_algorithm='hierarchical_clustering',
+        num_clusters=2, clustering_algorithm='hierarchical',
         num_folds=5, num_folds_hyperparameters_tuning=3,
-        max_num_genes=180, gene_entropy_threshold=6.3)
-    #epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
+        max_num_genes=100, gene_entropy_threshold=6.0)
+    epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
 
     return epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster
 

@@ -93,7 +93,6 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 def nested_cross_validation_on_RNN(network, epigenetic_data):
 
     k_fold_datasets, k_fold_datasets_hyperparameters_tuning = epigenetic_data.get_k_fold_datasets()
-    print k_fold_datasets
     output_size = epigenetic_data.output_size
 
     keys = k_fold_datasets.keys()
@@ -110,7 +109,7 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
             #network, k_fold_datasets_hyperparameters_tuning[key])
         learning_rate = 0.0001
         weight_decay = 0.01
-        keep_probability = 0.5
+        keep_probability = 0.7
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)

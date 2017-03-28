@@ -1,3 +1,4 @@
+import numpy as np
 import math
 
 # Set the gene entropy threshold for selecting the gene
@@ -28,6 +29,30 @@ def compute_probability_distribution(gene_expressions):
             normalized_gene_expressions[index] = float(gene_expressions[index])/gene_expressions_sum
 
     return normalized_gene_expressions
+
+
+def normalise_data(gene_expressions):
+    """
+    Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
+    to the neural network architectures.
+
+    :param (list) gene_expressions :  The un-normalized gene expression profile for a training example
+    :return (list): normalized_gene_expressions: The normalized gene expression profile for a training
+             example
+    """
+    gene_expressions = np.array(gene_expressions)
+    #mean = np.mean(gene_expressions)
+    #variance = np.var(gene_expressions)
+
+    #gene_expressions = (gene_expressions - mean) / variance
+
+    #max = np.max(gene_expressions)
+    #min = np.min(gene_expressions)
+    #gene_expressions = (gene_expressions - min) / (max-min)
+
+    gene_expressions = gene_expressions / np.linalg.norm(gene_expressions)
+
+    return gene_expressions
 
 
 def convert_to_float(line_elements):
@@ -153,8 +178,7 @@ def extract_embryo_id_to_gene_expression(data_file, gene_id_to_gene_entropy, gen
                 embryo_id_to_gene_expression[embryo_ids[index]] += [line_elements[index + 1]]
 
     for embryo_id in embryo_ids:
-        embryo_id_to_gene_expression[embryo_id] = \
-            convert_to_float(embryo_id_to_gene_expression[embryo_id])
+        embryo_id_to_gene_expression[embryo_id] = convert_to_float(embryo_id_to_gene_expression[embryo_id])
 
     return embryo_id_to_gene_expression
 

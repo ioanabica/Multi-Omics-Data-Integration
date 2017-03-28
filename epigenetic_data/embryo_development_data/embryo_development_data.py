@@ -3,7 +3,7 @@ import numpy as np
 
 from embryo_development_data_processing import extract_data_from_embryo_stage_file, extract_embryo_id_to_gene_expression, \
     extract_embryo_id_to_gene_expression_clusters, extract_gene_id_to_gene_entropy_and_expression_levels, \
-    compute_clusters_size, create_one_hot_encoding, create_embryo_stage_to_embryo_ids
+    compute_clusters_size, create_one_hot_encoding, create_embryo_stage_to_embryo_ids, normalise_data
 from embryo_development_datasets import create_k_fold_embryo_ids, \
     create_k_fold_datasets, create_k_fold_datasets_with_clusters
 from epigenetic_data.epigenetic_data import EpigeneticData
@@ -52,8 +52,6 @@ class EmbryoDevelopmentData(EpigeneticData):
             k_fold_embryo_ids_hyperparameters_tuning = create_k_fold_embryo_ids(
                 self.num_folds_hyperparameters_tuning, embryo_stage_to_embryo_ids)
 
-            print k_fold_embryo_ids_hyperparameters_tuning
-
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
                 self.input_data_size, self.output_size,
@@ -73,7 +71,7 @@ class EmbryoDevelopmentData(EpigeneticData):
 
     def extract_data_from_gene_expression_file(self):
         embryo_gene_expression_file = open(
-            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression_tpm1_halfStage_log.txt', 'r')
+            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression.txt', 'r')
         self.geneId_to_gene_entropy, self.geneId_to_expression_levels = \
             extract_gene_id_to_gene_entropy_and_expression_levels(
                 embryo_gene_expression_file, self.gene_entropy_threshold, self.max_num_genes)
@@ -107,6 +105,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         self.num_clusters = num_clusters
         self.extract_clustering_data_from_gene_expression_file(clustering_algorithm)
         self.output_size = len(self.embryo_stage_to_embryo_ids.keys())
+        print self.embryo_id_to_gene_expression
 
     def get_k_fold_datasets(self):
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
@@ -134,8 +133,6 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
             k_fold_embryo_ids_hyperparameters_tuning = create_k_fold_embryo_ids(
                 self.num_folds_hyperparameters_tuning, embryo_stage_to_embryo_ids)
 
-            print k_fold_embryo_ids_hyperparameters_tuning
-
             k_fold_dataset = create_k_fold_datasets_with_clusters(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
                 self.clusters_size, self.output_size,
@@ -148,7 +145,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
     def extract_clustering_data_from_gene_expression_file(self, clustering_algorithm):
         embryo_gene_expression_file = open(
-            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression_tpm1_halfStage_log.txt', 'r')
+            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression.txt', 'r')
 
         if clustering_algorithm == 'hierarchical':
             self.gene_id_to_gene_cluster, self.gene_clusters = \
@@ -169,14 +166,11 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         embryo_ids = self.embryo_id_to_gene_expression_clusters.keys()
         for embryo_id in embryo_ids:
             cluster_ids = self.embryo_id_to_gene_expression_clusters[embryo_id].keys()
-
             for cluster_id in cluster_ids:
                 gene_expression = self.embryo_id_to_gene_expression_clusters[embryo_id][cluster_id]
-
                 for index in range(len(gene_expression)):
                     gene_expression[index] += np.random.normal(mean, stddev)
-                self.embryo_id_to_gene_expression_clusters[embryo_id][stddev] = gene_expression
-
+                self.embryo_id_to_gene_expression_clusters[embryo_id][cluster_id] = gene_expression
 
 
 class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
@@ -189,7 +183,8 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
             self, num_clusters, clustering_algorithm,
                  num_folds, num_folds_hyperparameters_tuning,
                  max_num_genes, gene_entropy_threshold)
-        self.input_data_size = 52
+        self.input_data_size = 256
+        print self.embryo_id_to_gene_expression_clusters
 
     def get_k_fold_datasets(self):
 
@@ -224,8 +219,6 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
                 training_embryo_ids, self.embryo_id_to_embryo_stage)
             k_fold_embryo_ids_hyperparameters_tuning = create_k_fold_embryo_ids(
                 self.num_folds_hyperparameters_tuning, embryo_stage_to_embryo_ids)
-
-            print k_fold_embryo_ids_hyperparameters_tuning
 
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,

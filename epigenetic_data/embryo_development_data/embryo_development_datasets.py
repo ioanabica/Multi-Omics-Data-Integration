@@ -22,6 +22,28 @@ def compute_probability_distribution(gene_expressions):
 
     return normalized_gene_expressions
 
+def normalise_data(gene_expressions):
+    """
+    Normalizes the gene expressions profile to obtain a probability distribution which will be used as the input
+    to the neural network architectures.
+
+    :param (list) gene_expressions :  The un-normalized gene expression profile for a training example
+    :return (list): normalized_gene_expressions: The normalized gene expression profile for a training
+             example
+    """
+
+    gene_expressions = np.array(gene_expressions)
+    mean = np.mean(gene_expressions)
+    variance = np.var(gene_expressions)
+
+    gene_expressions = (gene_expressions - mean) / variance
+
+    #max = np.max(gene_expressions)
+    #min = np.min(gene_expressions)
+    #gene_expressions = (gene_expressions - min) / (max-min)
+
+    return gene_expressions
+
 
 def extract_training_validation_test_embryo_ids(embryoStage_to_embryoIds):
     """
@@ -71,7 +93,7 @@ def create_training_dataset(
     np.random.shuffle(training_embryo_ids)
     index = 0
     for embryoId in training_embryo_ids:
-        training_data[index, :] = compute_probability_distribution(embryo_id_to_gene_expressions[embryoId])
+        training_data[index, :] = normalise_data(embryo_id_to_gene_expressions[embryoId])
         training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 
@@ -104,7 +126,7 @@ def create_validation_dataset(
     np.random.shuffle(validation_embryo_ids)
     index = 0
     for embryoId in validation_embryo_ids:
-        validation_data[index, :] = compute_probability_distribution(embryo_id_to_gene_expressions[embryoId])
+        validation_data[index, :] = normalise_data(embryo_id_to_gene_expressions[embryoId])
         validation_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 
@@ -139,7 +161,7 @@ def create_test_dataset(
     np.random.shuffle(test_embryoIds)
     index = 0
     for embryoId in test_embryoIds:
-        test_data[index, :] = compute_probability_distribution(embryoId_to_geneExpressions[embryoId])
+        test_data[index, :] = normalise_data(embryoId_to_geneExpressions[embryoId])
         test_labels[index, :] = embryoStage_to_oneHotEncoding[embryoId_to_embryoStage[embryoId]]
         index += 1
 
@@ -179,7 +201,7 @@ def create_training_dataset_with_clusters(
     for embryoId in training_embryo_ids:
         for cluster_id in range(len(clusters_size)):
             training_data[cluster_id][index, :] = \
-                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
+                normalise_data(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
         training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 
@@ -218,7 +240,7 @@ def create_validation_dataset_with_clusters(
     for embryoId in validation_embryo_ids:
         for cluster_id in range(len(clusters_size)):
             validation_data[cluster_id][index, :] = \
-                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
+                normalise_data(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
         validation_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 
@@ -257,7 +279,7 @@ def create_test_dataset_with_clusters(
     for embryoId in test_embryo_ids:
         for cluster_id in range(len(clusters_size)):
             testing_data[cluster_id][index, :] = \
-                compute_probability_distribution(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
+                normalise_data(embryo_id_to_gene_expressions_clusters[embryoId][cluster_id])
         training_labels[index, :] = embryo_stage_to_one_hot_encoding[embryo_id_to_embryo_stage[embryoId]]
         index += 1
 

@@ -50,7 +50,9 @@ def compute_new_centers(clusters, gene_id_to_expression_levels):
     for index in range(len(clusters)):
         for gene_id in clusters[index]:
             centers[index] = np.add(centers[index], gene_id_to_expression_levels[gene_id])
-        centers[index] = np.divide(centers[index], len(clusters[index]))
+
+        if len(clusters[index]) != 0:
+            centers[index] = np.divide(centers[index], len(clusters[index]))
 
     return centers
 
