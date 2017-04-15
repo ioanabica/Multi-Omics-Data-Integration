@@ -3,9 +3,10 @@ import math
 
 from epigenetic_data.embryo_development_data.embryo_development_data import \
     EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters, EmbryoDevelopmentDataWithSingleCluster
-from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters, CancerDataWithDNAMethylationLevels
+from epigenetic_data.cancer_data.cancer_data import CancerPatientsData, CancerPatientsDataWithModalities, \
+    CancerPatientsDataDNAMethylationLevels
 
-from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
+from neural_network_models.multilayer_perceptron import MultilayerPerceptron
 from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
@@ -38,7 +39,7 @@ def evaluate_feed_forward_neural_network(epigenetic_data):
     print input_data_size
     output_size = epigenetic_data.output_size
 
-    feed_forward_neural_network = FeedforwardNeuralNetwork(input_data_size, [256, 128, 64, 32], output_size)
+    feed_forward_neural_network = MultilayerPerceptron(input_data_size, [256, 128, 64, 32], output_size)
     average_accuracy, confussion_matrix = nested_cross_validation_on_MLP(feed_forward_neural_network, epigenetic_data)
 
     return average_accuracy, confussion_matrix
@@ -71,7 +72,7 @@ def evaluate_recurrent_neural_network(epigenetic_data):
     print "-------------------Evaluating Recurrent Neural Network-------------------------"
     print "-------------------------------------------------------------------------------"
 
-    input_data_size = epigenetic_data.input_data_size
+    input_data_size = epigenetic_data.input_size
     output_size = epigenetic_data.output_size
 
     """
@@ -84,7 +85,7 @@ def evaluate_recurrent_neural_network(epigenetic_data):
 
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=16, input_step_size=16,
-        LSTMs_state_size=[64, 128], hidden_units=[128, 64],
+        LSTM_units_state_size=[64, 128], hidden_units=[128, 64],
         output_size=output_size)
 
     average_accuracy, confussion_matrix = nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data)
@@ -128,10 +129,10 @@ def get_cancer_data():
     print noise_mean
     print noise_stddev
 
-    epigenetic_data = CancerData(num_folds = 4, num_folds_hyperparameters_tuning=3)
+    epigenetic_data = CancerPatientsData(num_folds = 4, num_folds_hyperparameters_tuning=3)
     epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
-    epigenetic_data_with_clusters = CancerDataWithClusters(num_folds=4, num_folds_hyperparameters_tuning=3)
+    epigenetic_data_with_clusters = CancerDataWithModalities(num_folds=4, num_folds_hyperparameters_tuning=3)
     epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_for_single_cluster = CancerDataWithDNAMethylationLevels(num_folds = 4, num_folds_hyperparameters_tuning=3)

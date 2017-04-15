@@ -24,7 +24,7 @@ def compute_probability_distribution(input_values):
     return normalized_input_values
 
 
-def extract_training_validation_test_patient_ids(labels_to_patient_ids):
+def __extract_training_validation_test_patient_ids(labels_to_patient_ids):
     training_patient_ids = []
     validation_patient_ids = []
     test_patient_ids = []

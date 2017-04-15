@@ -37,13 +37,13 @@ class SuperlayeredNeuralNetwork(object):
         self.merge_layers_size = merge_layers_size
         self.output_size = output_size
 
-    def train_and_evaluate(self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
+    def train_and_evaluate(self, training_dataset, test_dataset, learning_rate, weight_decay, keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
         This function is used for cross validation.
 
         :param training_dataset: dictionary containing the training data and training labels
-        :param validation_dataset: dictionary containing the validation data and validation labels
+        :param test_dataset: dictionary containing the validation data and validation labels
         :return: the validation accuracy of the model
         """
 
@@ -51,9 +51,9 @@ class SuperlayeredNeuralNetwork(object):
         s2_training_data = training_dataset['training_data'][1]
         training_labels = training_dataset["training_labels"]
 
-        s1_validation_data = validation_dataset['validation_data'][0]
-        s2_validation_data = validation_dataset['validation_data'][1]
-        validation_labels = validation_dataset["validation_labels"]
+        s1_validation_data = test_dataset['validation_data'][0]
+        s2_validation_data = test_dataset['validation_data'][1]
+        validation_labels = test_dataset["validation_labels"]
 
         graph = tf.Graph()
         with graph.as_default():
@@ -79,13 +79,13 @@ class SuperlayeredNeuralNetwork(object):
                 merge_layer_size_1, merge_layer_size_2,
                 self.output_size)
 
-            logits = self.inference(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
+            logits = self.compute_predictions(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
             training_loss = self.compute_loss(logits, tf_output_labels, weights, weight_decay)
 
             optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
             training_predictions = tf.nn.softmax(logits)
-            validation_predictions = tf.nn.softmax(self.inference(
+            validation_predictions = tf.nn.softmax(self.compute_predictions(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
         steps = 6000
@@ -130,9 +130,6 @@ class SuperlayeredNeuralNetwork(object):
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
         return validation_accuracy, confussion_matrix
-
-
-
 
 
     def train_validate_test(self, training_dataset, validation_dataset, test_dataset,
@@ -182,15 +179,15 @@ class SuperlayeredNeuralNetwork(object):
                 merge_layer_size_1, merge_layer_size_2,
                 self.output_size)
 
-            logits = self.inference(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
+            logits = self.compute_predictions(tf_s1_input_data, tf_s2_input_data, weights, biases, tf_keep_probability)
             training_loss = self.compute_loss(logits, tf_output_labels, weights, weight_decay)
 
             optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
             training_predictions = tf.nn.softmax(logits)
-            validation_predictions = tf.nn.softmax(self.inference(
+            validation_predictions = tf.nn.softmax(self.compute_predictions(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
-            test_predictions = tf.nn.softmax(self.inference(
+            test_predictions = tf.nn.softmax(self.compute_predictions(
                 s1_test_data, s2_test_data, weights, biases, tf_keep_probability))
 
         steps = 8000
@@ -362,7 +359,7 @@ class SuperlayeredNeuralNetwork(object):
 
         return weights, biases
 
-    def inference(self, s1_input_data, s2_input_data, weights, biases, keep_probability):
+    def compute_predictions(self, s1_input_data, s2_input_data, weights, biases, keep_probability):
         """
 
         :param s1_input_data:

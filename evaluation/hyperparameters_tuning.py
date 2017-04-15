@@ -2,9 +2,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from epigenetic_data.cancer_data.cancer_data import CancerData, CancerDataWithClusters
-from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
-from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
 learning_rate_values = [0.01, 0.02, 0.03, 0.04, 0.05]
@@ -131,7 +128,7 @@ def superlayeredNN_hyperparameters_tuning():
 
     #epigeneticsData = EmbryoDevelopmentDataWithClusters(2, 3, 256, 6)
 
-    epigeneticsData = CancerDataWithClusters(5)
+    epigeneticsData = CancerDataWithModalities(5)
     training_dataset, validation_dataset, test_dataset = epigeneticsData.get_training_validation_test_datasets()
     clusters_size = epigeneticsData.clusters_size
     output_size = epigeneticsData.output_size

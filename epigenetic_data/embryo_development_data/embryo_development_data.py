@@ -21,9 +21,8 @@ class EmbryoDevelopmentData(EpigeneticData):
         EpigeneticData.__init__(self, num_folds, num_folds_hyperparameters_tuning)
         self.max_num_genes = max_num_genes
         self.gene_entropy_threshold = gene_entropy_threshold
-        self.extract_data_from_gene_expression_file()
-        self.extract_data_from_embryo_stage_file()
-        self.input_data_size = max_num_genes
+        self.extract_embryo_development_data()
+        self.input_size = max_num_genes
         self.output_size = len(self.embryo_stage_to_embryo_ids.keys())
 
     def get_k_fold_datasets(self):
@@ -36,7 +35,7 @@ class EmbryoDevelopmentData(EpigeneticData):
 
         print k_fold_embryo_ids
         self.k_fold_datasets = create_k_fold_datasets(
-            self.num_folds, k_fold_embryo_ids, self.input_data_size, self.output_size,
+            self.num_folds, k_fold_embryo_ids, self.input_size, self.output_size,
             self.embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
         self.k_fold_datasets_hyperparameters_tuning = dict()
@@ -54,7 +53,7 @@ class EmbryoDevelopmentData(EpigeneticData):
 
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
-                self.input_data_size, self.output_size,
+                self.input_size, self.output_size,
                 self.embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding,
                 self.embryo_id_to_embryo_stage)
 
@@ -62,25 +61,25 @@ class EmbryoDevelopmentData(EpigeneticData):
 
         return self.k_fold_datasets, self.k_fold_datasets_hyperparameters_tuning
 
-    def extract_data_from_embryo_stage_file(self):
-        embryo_stage_file = open(
-            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_stage.txt', 'r')
-        self.embryo_id_to_embryo_stage, self.embryo_stage_to_embryo_ids = \
-            extract_data_from_embryo_stage_file(embryo_stage_file)
-        embryo_stage_file.close()
 
-    def extract_data_from_gene_expression_file(self):
+    def extract_embryo_development_data(self):
         embryo_gene_expression_file = open(
             '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression.txt', 'r')
-        self.geneId_to_gene_entropy, self.geneId_to_expression_levels = \
+        geneId_to_gene_entropy, self.geneId_to_expression_levels = \
             extract_gene_id_to_gene_entropy_and_expression_levels(
                 embryo_gene_expression_file, self.gene_entropy_threshold, self.max_num_genes)
 
         embryo_gene_expression_file.seek(0)
         self.embryo_id_to_gene_expression = extract_embryo_id_to_gene_expression(
-            embryo_gene_expression_file, self.geneId_to_gene_entropy, self.gene_entropy_threshold, self.max_num_genes)
+            embryo_gene_expression_file, geneId_to_gene_entropy, self.gene_entropy_threshold, self.max_num_genes)
 
         embryo_gene_expression_file.close()
+
+        embryo_stage_file = open(
+            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_stage.txt', 'r')
+        self.embryo_id_to_embryo_stage, self.embryo_stage_to_embryo_ids = \
+            extract_data_from_embryo_stage_file(embryo_stage_file)
+        embryo_stage_file.close()
 
     def add_Gaussian_noise(self, mean, stddev):
         embryo_ids = self.embryo_id_to_gene_expression.keys()

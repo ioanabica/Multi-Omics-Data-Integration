@@ -1,7 +1,7 @@
 import numpy as np
 
 from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwork
-from neural_network_models.feedforward_neural_network import FeedforwardNeuralNetwork
+from neural_network_models.multilayer_perceptron import MultilayerPerceptron
 
 
 num_classes = 7
@@ -152,7 +152,7 @@ class SyntheticData(object):
 
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=16, input_step_size=16,
-        LSTMs_state_size=[64, 256], hidden_units=[128, 64],
+        LSTM_units_state_size=[64, 256], hidden_units=[128, 64],
         output_size=num_classes)
 
     learning_rate = 0.0001

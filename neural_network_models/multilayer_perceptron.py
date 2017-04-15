@@ -20,20 +20,20 @@ batch_size = 64
 logs_path = '/tmp/tensorboard'
 
 
-class FeedforwardNeuralNetwork(object):
+class MultilayerPerceptron(object):
 
-    def __init__(self, input_data_size, hidden_units, output_size):
-        self.input_data_size = input_data_size
+    def __init__(self, input_size, hidden_units, output_size):
+        self.input_data_size = input_size
         self.hidden_units = hidden_units
         self.output_size = output_size
 
     def train_and_evaluate(
-            self, training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability):
+            self, training_dataset, test_dataset, learning_rate, weight_decay, keep_probability):
         """
         Train the feed forward neural network using gradient descent by trying to minimize the loss.
 
         :param training_dataset: dictionary containing the training data and training labels
-        :param validation_dataset: dictionary containing the validation data and validation labels
+        :param test_dataset: dictionary containing the validation data and validation labels
         :param learning_rate:
         :param weight_decay:
         :param keep_probability:
@@ -43,8 +43,8 @@ class FeedforwardNeuralNetwork(object):
         training_data = training_dataset["training_data"]
         training_labels = training_dataset["training_labels"]
 
-        validation_data = validation_dataset["validation_data"]
-        validation_labels = validation_dataset["validation_labels"]
+        validation_data = test_dataset["validation_data"]
+        validation_labels = test_dataset["validation_labels"]
 
         graph = tf.Graph()
         with graph.as_default():
@@ -57,15 +57,15 @@ class FeedforwardNeuralNetwork(object):
             # dropout is used during training, but not during testing
             tf_keep_probability = tf.placeholder(tf.float32)
 
-            weights, biases = self.initialize_weights_and_biases()
+            self.weights, self.biases = self.initialize_weights_and_biases()
 
-            logits = self.inference(tf_input_data, weights, biases, tf_keep_probability)
-            training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)
+            logits = self.compute_predictions(tf_input_data, self.weights, self.biases, tf_keep_probability)
+            training_loss = self.compute_loss(logits, tf_input_labels, self.weights, weight_decay)
 
             optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
             training_predictions = tf.nn.softmax(logits)
-            validation_predictions = tf.nn.softmax(self.inference(validation_data, weights, biases, tf_keep_probability))
+            validation_predictions = tf.nn.softmax(self.compute_predictions(validation_data, self.weights, self.biases, tf_keep_probability))
 
 
         steps = 10000
@@ -111,6 +111,7 @@ class FeedforwardNeuralNetwork(object):
 
         return validation_accuracy, confussion_matrix
 
+
     def train_and_validate(self, training_dataset, validation_dataset, test_dataset,
                            learning_rate, weight_decay, keep_probability):
         """
@@ -151,15 +152,15 @@ class FeedforwardNeuralNetwork(object):
 
             weights, biases = self.initialize_weights_and_biases()
 
-            logits = self.inference(tf_input_data, weights, biases, tf_keep_probability)
+            logits = self.compute_predictions(tf_input_data, weights, biases, tf_keep_probability)
             training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)
 
             optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(training_loss)
 
             training_predictions = tf.nn.softmax(logits)
             validation_predictions = tf.nn.softmax(
-                self.inference(validation_data, weights, biases, tf_keep_probability))
-            test_predictions = tf.nn.softmax(self.inference(test_data, weights, biases, tf_keep_probability))
+                self.compute_predictions(validation_data, weights, biases, tf_keep_probability))
+            test_predictions = tf.nn.softmax(self.compute_predictions(test_data, weights, biases, tf_keep_probability))
 
             merged_summary = tf.merge_all_summaries()
 
@@ -290,7 +291,7 @@ class FeedforwardNeuralNetwork(object):
 
         return weights, biases
 
-    def inference(self, input_data, weights, biases, keep_probability):
+    def compute_predictions(self, input_data, weights, biases, keep_probability):
         """
         :param input_data:  input to the feedforward neural network for which the model is run
         :param weights: the weights for the layers of the neural network
@@ -390,12 +391,12 @@ class FeedforwardNeuralNetwork(object):
         return (100 * num_correct_labels) / predictions.shape[0]
 
 
-    def compute_confussion_matrix(self, predictions, labels):
+    def compute_confussion_matrix(self, test_predictions, test_labels):
 
         confusion_matrix = np.zeros(shape=(self.output_size, self.output_size))
-        for index in range(predictions.shape[0]):
-            predicted_class_index = np.argmax(predictions[index])
-            actual_class_index = np.argmax(labels[index])
+        for index in range(test_predictions.shape[0]):
+            predicted_class_index = np.argmax(test_predictions[index])
+            actual_class_index = np.argmax(test_labels[index])
 
             confusion_matrix[actual_class_index][predicted_class_index] +=1
 
