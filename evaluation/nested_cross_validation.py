@@ -12,6 +12,7 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
 
     confussion_matrix = np.zeros(shape=(output_size, output_size))
     validation_accuracy_list = list()
+    ROC_points = dict()
 
     """ Outer cross-validation """
 
@@ -37,17 +38,18 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, ffnn_confussion_matrix = network.train_and_evaluate(
+        validation_accuracy, ffnn_confussion_matrix, MLP_ROC_points = network.train_and_evaluate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
 
         print ffnn_confussion_matrix
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
+        ROC_points[key] = MLP_ROC_points
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
-    return average_validation_accuracy, confussion_matrix
+    return average_validation_accuracy, confussion_matrix, ROC_points
 
 
 def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
@@ -61,6 +63,7 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 
     confussion_matrix = np.zeros(shape=(output_size, output_size))
     validation_accuracy_list = list()
+    ROC_points = dict()
 
     """ Outer cross-validation """
 
@@ -77,17 +80,18 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
 
-        validation_accuracy, snn_confussion_matrix = network.train_and_evaluate(
+        validation_accuracy, snn_confussion_matrix, snn_ROC_points = network.train_and_evaluate(
             training_dataset, validation_dataset, learning_rate, weight_decay, keep_probability)
 
         print snn_confussion_matrix
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, snn_confussion_matrix)
+        ROC_points[key] = snn_ROC_points
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
-    return average_validation_accuracy, confussion_matrix
+    return average_validation_accuracy, confussion_matrix, ROC_points
 
 
 def nested_cross_validation_on_RNN(network, epigenetic_data):
@@ -100,6 +104,8 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
     confussion_matrix = np.zeros(shape=(output_size, output_size))
     validation_accuracy_list = list()
 
+    ROC_points = dict()
+
     """ Outer cross-validation """
 
     for key in keys:
@@ -108,7 +114,7 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         #learning_rate, weight_decay, keep_probability = choose_hyperparameters_for_RNN(
             #network, k_fold_datasets_hyperparameters_tuning[key])
         learning_rate = 0.0001
-        weight_decay = 0.01
+        weight_decay = 0.02
         keep_probability = 0.7
 
         print "Learning rate" + str(learning_rate)
@@ -123,17 +129,18 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, rnn_confussion_matrix = network.train_and_evaluate(
+        validation_accuracy, rnn_confussion_matrix, rnn_ROC_points = network.train_and_evaluate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
         print rnn_confussion_matrix
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)
+        ROC_points[key] = rnn_ROC_points
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
-    return average_validation_accuracy, confussion_matrix
+    return average_validation_accuracy, confussion_matrix, ROC_points
 
 
 def plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, RNN_validation_accuracy):

@@ -112,7 +112,7 @@ def inner_cross_validation(network, k_fold_datasets, learning_rate, weight_decay
         validation_dataset = k_fold_datasets[key]["validation_dataset"]
         print len(validation_dataset["validation_data"])
 
-        validation_accuracy, _ = network.train_and_evaluate(
+        validation_accuracy, _, _ = network.train_and_evaluate(
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
 

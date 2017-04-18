@@ -29,14 +29,14 @@ class EmbryoDevelopmentData(EpigeneticData):
         embryoIds = self.embryo_id_to_embryo_stage.keys()
 
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+        self.label_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
 
         print k_fold_embryo_ids
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_embryo_ids, self.input_size, self.output_size,
-            self.embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
+            self.embryo_id_to_gene_expression, self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
         self.k_fold_datasets_hyperparameters_tuning = dict()
 
@@ -54,7 +54,7 @@ class EmbryoDevelopmentData(EpigeneticData):
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
                 self.input_size, self.output_size,
-                self.embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding,
+                self.embryo_id_to_gene_expression, self.label_to_one_hot_encoding,
                 self.embryo_id_to_embryo_stage)
 
             self.k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
@@ -108,7 +108,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
     def get_k_fold_datasets(self):
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+        self.label_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
         print k_fold_embryo_ids
@@ -117,7 +117,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
             self.num_folds, k_fold_embryo_ids,
             self.clusters_size, self.output_size,
             self.embryo_id_to_gene_expression_clusters,
-            self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
+            self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
         self.k_fold_datasets_hyperparameters_tuning = dict()
 
@@ -136,7 +136,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
                 self.clusters_size, self.output_size,
                 self.embryo_id_to_gene_expression_clusters,
-                self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
+                self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
             self.k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset
 
@@ -197,14 +197,14 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
         print self.clusters_size
 
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
-        self.embryo_stage_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
+        self.label_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
 
         print k_fold_embryo_ids
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_embryo_ids, self.input_data_size, self.output_size,
-            embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
+            embryo_id_to_gene_expression, self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
 
         self.k_fold_datasets_hyperparameters_tuning = dict()
 
@@ -222,7 +222,7 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_embryo_ids_hyperparameters_tuning,
                 self.input_data_size, self.output_size,
-                embryo_id_to_gene_expression, self.embryo_stage_to_one_hot_encoding,
+                embryo_id_to_gene_expression, self.label_to_one_hot_encoding,
                 self.embryo_id_to_embryo_stage)
 
             self.k_fold_datasets_hyperparameters_tuning[index_i] = k_fold_dataset

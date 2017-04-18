@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 # Hyperparameters
 # hidden_units_1 = 256
@@ -68,7 +67,7 @@ class MultilayerPerceptron(object):
             validation_predictions = tf.nn.softmax(self.compute_predictions(validation_data, self.weights, self.biases, tf_keep_probability))
 
 
-        steps = 10000
+        steps = 7000
 
         with tf.Session(graph=graph) as session:
 
@@ -107,9 +106,12 @@ class MultilayerPerceptron(object):
 
             confussion_matrix = self.compute_confussion_matrix(
                 validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
+            ROC_points = self.compute_ROC_points(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        return validation_accuracy, confussion_matrix
+        return validation_accuracy, confussion_matrix, ROC_points
 
 
     def train_and_validate(self, training_dataset, validation_dataset, test_dataset,
@@ -401,3 +403,18 @@ class MultilayerPerceptron(object):
             confusion_matrix[actual_class_index][predicted_class_index] +=1
 
         return confusion_matrix
+
+    def compute_ROC_points(self, test_predictions, test_labels):
+
+        ROC_points = dict()
+        ROC_points['y_true'] = []
+        ROC_points['y_score'] = []
+
+        for index in range(test_predictions.shape[0]):
+            true_class = np.argmax(test_labels[index])
+            ROC_points['y_true'] += [true_class]
+
+            score = test_predictions[index][1]
+            ROC_points['y_score'] += [score]
+
+        return ROC_points

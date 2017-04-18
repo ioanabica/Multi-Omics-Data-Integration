@@ -91,7 +91,7 @@ class CancerPatientsDataWithModalities(CancerPatientsData):
         self.patient_id_to_input_clusters = self.create_patient_id_to_input_clusters()
 
         patient_ids = self.patient_id_to_label.keys()
-        self.modalities_size = [len(self.patient_id_to_gene_expressions[patient_ids[0]]),
+        self.clusters_size = [len(self.patient_id_to_gene_expressions[patient_ids[0]]),
                                 len(self.patient_id_to_dna_methylation[patient_ids[0]])]
 
         labels = self.label_to_patient_ids.keys()

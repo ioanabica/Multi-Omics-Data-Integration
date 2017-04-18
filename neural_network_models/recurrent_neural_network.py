@@ -133,7 +133,7 @@ class RecurrentNeuralNetwork(object):
                     'Minibatch accuracy: %.1f%%' % self.compute_predictions_accuracy(predictions, minibatch_labels))
 
             validation_feed_dictionary = self.create_feed_dictionary(
-                tf_input_data, tf_input_labels, keep_probability,
+                tf_input_data, tf_input_labels, tf_keep_probability,
                 validation_data, validation_labels, 1.0)
 
             validation_accuracy = self.compute_predictions_accuracy(
@@ -142,9 +142,12 @@ class RecurrentNeuralNetwork(object):
             confussion_matrix = self.compute_confussion_matrix(
                             validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
 
+            ROC_points = self.compute_ROC_points(
+                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
-        return validation_accuracy, confussion_matrix
+        return validation_accuracy, confussion_matrix, ROC_points
 
 
     def train_validate_test(
@@ -319,54 +322,68 @@ class RecurrentNeuralNetwork(object):
         biases = dict()
 
         # Input gate
-        input_cW = tf.Variable(
+        input_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
-        input_pW = tf.Variable(
-            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
-        weights['LSTM_input_cW'] = input_cW
-        weights['LSTM_input_pW'] = input_pW
+
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+                         compute_uv=True, full_matrices=False)
+
+        input_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
+        #input_U = tf.Variable(
+           # tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        weights['LSTM_input_W'] = input_W
+        weights['LSTM_input_U'] = input_U
 
         input_biases = tf.Variable(tf.zeros(num_units))
         biases['LSTM_input_biases'] = input_biases
 
         # Forget gate
-        forget_cW = tf.Variable(
+        forget_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
-        forget_pW = tf.Variable(
-            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
-        weights['LSTM_forget_cW'] = forget_cW
-        weights['LSTM_forget_pW'] = forget_pW
+
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+                         compute_uv=True, full_matrices=False)
+
+        forget_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
+        #forget_U = tf.Variable(
+            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        weights['LSTM_forget_W'] = forget_W
+        weights['LSTM_forget_U'] = forget_U
 
         forget_biases = tf.Variable(tf.ones(num_units))
         biases['LSTM_forget_biases'] = forget_biases
 
-        """
-        Memory cell
+        #Memory Cell
 
-        Use orthogonal initialization for the weights
-        """
-        s, u, v = tf.svd(tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size))),
+        memory_cell_W = tf.Variable(
+            tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
+
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
                          compute_uv=True, full_matrices=False)
-        memory_cell_cW = tf.Variable(tf.reshape(v, [input_size, num_units]))
 
-        s, u, v = tf.svd(tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units))),
-                        compute_uv=True, full_matrices=False)
-        memory_cell_pW = tf.Variable(tf.reshape(v, [num_units, num_units]))
-        #memory_cell_pW = tf.Variable(tf.diag(tf.ones(num_units)))
+        memory_cell_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
+        #memory_cell_U = tf.Variable(tf.diag(tf.ones(num_units)))
+        #memory_cell_U = tf.Variable(
+            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
 
-        weights['LSTM_memory_cell_cW'] = memory_cell_cW
-        weights['LSTM_memory_cell_pW'] = memory_cell_pW
+        weights['LSTM_memory_cell_W'] = memory_cell_W
+        weights['LSTM_memory_cell_U'] = memory_cell_U
 
         memory_cell_biases = tf.Variable(tf.zeros(num_units))
         biases['LSTM_memory_cell_biases'] = memory_cell_biases
 
         # Output gate
-        output_cW = tf.Variable(
+        output_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
-        output_pW = tf.Variable(
-            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
-        weights['LSTM_output_cW'] = output_cW
-        weights['LSTM_output_pW'] = output_pW
+
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+                         compute_uv=True, full_matrices=False)
+
+        output_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
+        #output_U = tf.Variable(
+            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        weights['LSTM_output_W'] = output_W
+        weights['LSTM_output_U'] = output_U
 
         output_biases = tf.Variable(tf.zeros(num_units))
         biases['LSTM_output_biases'] = output_biases
@@ -465,22 +482,22 @@ class RecurrentNeuralNetwork(object):
         :param biases:
         :return:
         """
-        input_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_input_cW'])) + \
-                     tf.matmul(previous_hidden_state, weights['LSTM_input_pW']) + \
+        input_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_input_W'])) + \
+                     tf.matmul(previous_hidden_state, weights['LSTM_input_U']) + \
                      biases['LSTM_input_biases']
 
-        candidate_cell_state = tf.tanh(tf.matmul(input_data, weights['LSTM_memory_cell_cW'])) + \
-                               tf.matmul(previous_hidden_state, weights['LSTM_memory_cell_pW']) + \
+        candidate_cell_state = tf.tanh(tf.matmul(input_data, weights['LSTM_memory_cell_W'])) + \
+                               tf.matmul(previous_hidden_state, weights['LSTM_memory_cell_U']) + \
                                biases['LSTM_memory_cell_biases']
 
-        forget_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_forget_cW'])) + \
-                      tf.matmul(previous_hidden_state, weights['LSTM_forget_pW']) + \
+        forget_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_forget_W'])) + \
+                      tf.matmul(previous_hidden_state, weights['LSTM_forget_U']) + \
                       biases['LSTM_forget_biases']
 
         new_cell_state = input_gate * candidate_cell_state + forget_gate * previous_cell_state
 
-        output_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_output_cW'])) + \
-                      tf.matmul(previous_hidden_state, weights['LSTM_output_pW']) + \
+        output_gate = tf.sigmoid(tf.matmul(input_data, weights['LSTM_output_W'])) + \
+                      tf.matmul(previous_hidden_state, weights['LSTM_output_U']) + \
                       biases['LSTM_output_biases']
 
         new_hidden_state = output_gate * tf.tanh(new_cell_state)
@@ -597,23 +614,23 @@ class RecurrentNeuralNetwork(object):
                       tf.nn.l2_loss(weights['FCL']['FCL_first_hidden_layer']) + \
                       tf.nn.l2_loss(weights['FCL']['FCL_second_hidden_layer'])
 
-        LSTM_1_L2_loss = tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_pW'])
+        LSTM_1_L2_loss = tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_input_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_forget_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_memory_cell_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_1']['LSTM_output_U'])
 
-        LSTM_2_L2_loss = tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_pW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_cW']) + \
-                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_pW'])
+        LSTM_2_L2_loss = tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_input_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_forget_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_memory_cell_U']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_W']) + \
+                         tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_U'])
 
         loss = tf.reduce_mean(
             cross_entropy + weight_decay * (
@@ -644,3 +661,20 @@ class RecurrentNeuralNetwork(object):
             confusion_matrix[actual_class_index][predicted_class_index] += 1
 
         return confusion_matrix
+
+    def compute_ROC_points(self, test_predictions, test_labels):
+
+        ROC_points = dict()
+        ROC_points['y_true'] = []
+        ROC_points['y_score'] = []
+
+        for index in range(test_predictions.shape[0]):
+            print test_predictions[index]
+            print test_labels[index]
+            true_class = np.argmax(test_labels[index])
+            ROC_points['y_true'] += [true_class]
+
+            score = test_predictions[index][1]
+            ROC_points['y_score'] += [score]
+
+        return ROC_points

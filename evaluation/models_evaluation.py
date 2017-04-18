@@ -1,5 +1,7 @@
 import numpy as np
 import math
+from evaluation_metrics import *
+
 
 from epigenetic_data.embryo_development_data.embryo_development_data import \
     EmbryoDevelopmentData, EmbryoDevelopmentDataWithClusters, EmbryoDevelopmentDataWithSingleCluster
@@ -15,16 +17,11 @@ from evaluation.nested_cross_validation import nested_cross_validation_on_MLP, n
 
 def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster):
 
-    print "USING EPIGENETIC DATA"
-    #print "USING EPIGENETIC DATA FOR SINGLE CLUSTER +++++"
-    average_accuracy, confussion_matrix = evaluate_recurrent_neural_network(epigenetic_data)
-    print average_accuracy, confussion_matrix
 
-    average_accuracy, confussion_matrix = evaluate_superlayered_neural_network(epigenetic_data_with_clusters)
-    print average_accuracy, confussion_matrix
+    evaluate_superlayered_neural_network(epigenetic_data_with_clusters)
+    evaluate_feed_forward_neural_network(epigenetic_data)
+    evaluate_recurrent_neural_network(epigenetic_data)
 
-    average_accuracy, confussion_matrix = evaluate_feed_forward_neural_network(epigenetic_data)
-    print average_accuracy, confussion_matrix
 
 
 def evaluate_feed_forward_neural_network(epigenetic_data):
@@ -34,15 +31,18 @@ def evaluate_feed_forward_neural_network(epigenetic_data):
     print "-------------------Evaluating Feed Forward Neural Network----------------------"
     print "-------------------------------------------------------------------------------"
 
-    input_data_size = epigenetic_data.input_data_size
+    input_data_size = epigenetic_data.input_size
     print "input data size"
     print input_data_size
     output_size = epigenetic_data.output_size
 
     feed_forward_neural_network = MultilayerPerceptron(input_data_size, [256, 128, 64, 32], output_size)
-    average_accuracy, confussion_matrix = nested_cross_validation_on_MLP(feed_forward_neural_network, epigenetic_data)
+    average_accuracy, confussion_matrix, ROC_points = nested_cross_validation_on_MLP(feed_forward_neural_network, epigenetic_data)
+    print epigenetic_data.label_to_one_hot_encoding
 
-    return average_accuracy, confussion_matrix
+
+    plot_ROC_curves(ROC_points)
+    plot_confussion_matrix_as_heatmap(confussion_matrix)
 
 
 def evaluate_superlayered_neural_network(epigenetic_data_with_clusters):
@@ -51,19 +51,31 @@ def evaluate_superlayered_neural_network(epigenetic_data_with_clusters):
     print "-------------------Evaluating Superlayered Neural Network----------------------"
     print "-------------------------------------------------------------------------------"
 
-
     clusters_size = epigenetic_data_with_clusters.clusters_size
     output_size = epigenetic_data_with_clusters.output_size
 
-    superlayered_neural_network = SuperlayeredNeuralNetwork(
+    """superlayered_neural_network = SuperlayeredNeuralNetwork(
         [clusters_size[0], clusters_size[1]],
         [[256, 128, 64, 32], [256, 128, 64, 32]],
+        [128, 32], output_size)"""
+
+    superlayered_neural_network = SuperlayeredNeuralNetwork(
+        [clusters_size[0], clusters_size[1]],
+        [[512, 256, 128, 64], [512, 256, 128, 64]],
         [128, 32], output_size)
 
-    average_accuracy, confussion_matrix = nested_cross_validation_on_SNN(
+    average_accuracy, confussion_matrix, ROC_points = nested_cross_validation_on_SNN(
         superlayered_neural_network, epigenetic_data_with_clusters)
 
-    return average_accuracy, confussion_matrix
+    label_to_one_hot_encoding = epigenetic_data_with_clusters.label_to_one_hot_encoding
+    class_id_to_symbol_id = compute_class_id_to_class_symbol(label_to_one_hot_encoding)
+    class_symbol_to_evaluation_matrix = compute_evaluation_metrics_for_each_class(
+        confussion_matrix, class_id_to_symbol_id)
+
+    print class_symbol_to_evaluation_matrix
+
+    plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confussion Matrix for SNN')
+    plot_ROC_curves(ROC_points)
 
 
 def evaluate_recurrent_neural_network(epigenetic_data):
@@ -75,22 +87,24 @@ def evaluate_recurrent_neural_network(epigenetic_data):
     input_data_size = epigenetic_data.input_size
     output_size = epigenetic_data.output_size
 
-    """
-        Architecture for cancer data
+       # Architecture for cancer data
 
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=input_data_size/4, input_step_size=4,
-        LSTMs_state_size=[32, 128], hidden_units=[64, 32],
-        output_size=output_size)"""
-
-    recurrent_neural_network = RecurrentNeuralNetwork(
-        input_sequence_length=16, input_step_size=16,
-        LSTM_units_state_size=[64, 128], hidden_units=[128, 64],
+        LSTM_units_state_size=[32, 128], hidden_units=[64, 32],
         output_size=output_size)
 
-    average_accuracy, confussion_matrix = nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data)
+    """
+    recurrent_neural_network = RecurrentNeuralNetwork(
+        input_sequence_length=16, input_step_size=8,
+        LSTM_units_state_size=[64, 256], hidden_units=[256, 64],
+        output_size=output_size)"""
 
-    return average_accuracy, confussion_matrix
+    average_accuracy, confussion_matrix, ROC_points = nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data)
+    print epigenetic_data.label_to_one_hot_encoding
+
+    #plot_ROC_curves(ROC_points)
+    plot_confussion_matrix_as_heatmap(confussion_matrix)
 
 
 def get_embryo_development_data():
@@ -103,13 +117,13 @@ def get_embryo_development_data():
     print noise_stddev
 
     epigenetic_data = EmbryoDevelopmentData(
-        num_folds=5, num_folds_hyperparameters_tuning=3, max_num_genes=256, gene_entropy_threshold=6.2)
-    epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
+        num_folds=5, num_folds_hyperparameters_tuning=3, max_num_genes=64, gene_entropy_threshold=6.3)
+    #epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_with_clusters = EmbryoDevelopmentDataWithClusters(
         num_clusters=2, clustering_algorithm='hierarchical',
-        num_folds=5, num_folds_hyperparameters_tuning=3,
-        max_num_genes=500, gene_entropy_threshold=6.0)
+        num_folds=2, num_folds_hyperparameters_tuning=3,
+        max_num_genes=300, gene_entropy_threshold=6.0)
     epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_for_single_cluster = EmbryoDevelopmentDataWithSingleCluster(
@@ -129,14 +143,14 @@ def get_cancer_data():
     print noise_mean
     print noise_stddev
 
-    epigenetic_data = CancerPatientsData(num_folds = 4, num_folds_hyperparameters_tuning=3)
-    epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
+    epigenetic_data = CancerPatientsData(num_folds=5, num_folds_hyperparameters_tuning=3)
+    #epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
-    epigenetic_data_with_clusters = CancerDataWithModalities(num_folds=4, num_folds_hyperparameters_tuning=3)
-    epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
+    epigenetic_data_with_clusters = CancerPatientsDataWithModalities(num_folds=5, num_folds_hyperparameters_tuning=3)
+    #epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
 
-    epigenetic_data_for_single_cluster = CancerDataWithDNAMethylationLevels(num_folds = 4, num_folds_hyperparameters_tuning=3)
-    epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
+    epigenetic_data_for_single_cluster = CancerPatientsDataDNAMethylationLevels(num_folds=5, num_folds_hyperparameters_tuning=3)
+    #epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
 
     return epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster
 
@@ -145,68 +159,7 @@ epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_clust
 evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster)
 
 
-def compute_class_id_to_class_symbol(label_to_one_hot_encoding):
-    class_id_to_class_symbol = dict()
-    labels = label_to_one_hot_encoding.keys()
-    for label in labels:
-        class_id = np.argmax(label_to_one_hot_encoding[label])
-        class_id_to_class_symbol[class_id] = label
-    return class_id_to_class_symbol
-
-
-def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_class_symbol):
-
-    confussion_matrix = np.array(confussion_matrix)
-
-    class_symbol_to_evaluation_metrics = dict()
-    class_ids = class_id_to_class_symbol.keys()
-
-    for class_id in class_ids:
-        class_symbol = class_id_to_class_symbol[class_id]
-        class_symbol_to_evaluation_metrics[class_symbol] = dict()
-
-    sum_over_rows = confussion_matrix.sum(axis=1)
-    sum_over_columns = confussion_matrix.sum(axis=0)
-
-
-    for class_id in class_ids:
-        class_symbol = class_id_to_class_symbol[class_id]
-
-        true_positives = confussion_matrix[class_id][class_id]
-        false_positives = sum_over_columns[class_id] - true_positives
-
-
-        false_negatives = sum_over_rows[class_id] - true_positives
-        true_negatives = sum_over_columns.sum() - sum_over_columns[class_id] - \
-                         sum_over_rows[class_id] + confussion_matrix[class_id][class_id]
-
-        precision = true_positives / (true_positives + false_positives)
-
-        recall =  true_positives / (true_positives + false_negatives)
-
-        f1_score = (2 * true_positives) / (2 * true_positives + false_positives + false_negatives)
-
-        MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
-              (math.sqrt((true_positives + false_positives) * (true_positives + false_negatives) * \
-                         (true_negatives + false_positives) * (true_negatives + false_negatives)))
-
-        class_symbol_to_evaluation_metrics[class_symbol]['true_positives'] = true_positives
-        class_symbol_to_evaluation_metrics[class_symbol]['false_positives'] = false_positives
-
-        class_symbol_to_evaluation_metrics[class_symbol]['true_negatives'] = true_negatives
-        class_symbol_to_evaluation_metrics[class_symbol]['false_negatives'] = false_negatives
-
-        class_symbol_to_evaluation_metrics[class_symbol]['precision'] = precision
-        class_symbol_to_evaluation_metrics[class_symbol]['recall'] = recall
-        class_symbol_to_evaluation_metrics[class_symbol]['f1_score'] = f1_score
-        class_symbol_to_evaluation_metrics[class_symbol]['MCC'] = MCC
-
-    return class_symbol_to_evaluation_metrics
-
-
-
-
-
-
+epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_cancer_data()
+evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster)
 
 
