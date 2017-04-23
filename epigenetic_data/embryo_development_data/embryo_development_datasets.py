@@ -313,6 +313,14 @@ def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
                 k_fold_embryoIds[index] += embryoIds[index*group_size:(index+1)*group_size]
             k_fold_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
 
+    keys = k_fold_embryoIds.keys()
+    print k_fold_embryoIds
+    for key in keys:
+        embryoIds = k_fold_embryoIds[key]
+        np.random.shuffle(embryoIds)
+        k_fold_embryoIds[key] = embryoIds
+    print k_fold_embryoIds
+
     return k_fold_embryoIds
 
 

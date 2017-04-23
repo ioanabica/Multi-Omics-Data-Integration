@@ -64,7 +64,7 @@ class EmbryoDevelopmentData(EpigeneticData):
 
     def extract_embryo_development_data(self):
         embryo_gene_expression_file = open(
-            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression.txt', 'r')
+            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression_tpm1_halfStage_log.txt', 'r')
         geneId_to_gene_entropy, self.geneId_to_expression_levels = \
             extract_gene_id_to_gene_entropy_and_expression_levels(
                 embryo_gene_expression_file, self.gene_entropy_threshold, self.max_num_genes)
@@ -144,7 +144,7 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
     def extract_clustering_data_from_gene_expression_file(self, clustering_algorithm):
         embryo_gene_expression_file = open(
-            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression.txt', 'r')
+            '/home/ioana/PycharmProjects/Part-II-Project/datasets/human_early_embryo_gene_expression_tpm1_halfStage_log.txt', 'r')
 
         if clustering_algorithm == 'hierarchical':
             self.gene_id_to_gene_cluster, self.gene_clusters = \

@@ -4,11 +4,11 @@ from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwor
 from neural_network_models.multilayer_perceptron import MultilayerPerceptron
 
 
-num_classes = 7
+num_classes = 2
 num_genes = 256
 num_shifted_genes = 16
-training_examples_for_class = 10
-validation_examples_for_class = 2
+training_examples_for_class = 100
+validation_examples_for_class = 20
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -159,6 +159,6 @@ class SyntheticData(object):
     weight_decay = 0.01
     keep_probability = 0.7
 
-    validation_accuracy, ffnn_confussion_matrix = recurrent_neural_network.train_and_evaluate(
+    validation_accuracy, ffnn_confussion_matrix, ROC_points = recurrent_neural_network.train_and_evaluate(
         training_dataset, validation_dataset,
         learning_rate, weight_decay, keep_probability)

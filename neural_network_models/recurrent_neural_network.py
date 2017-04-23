@@ -78,7 +78,6 @@ class RecurrentNeuralNetwork(object):
 
             training_loss = self.compute_loss(logits, tf_input_labels, weights, weight_decay)
 
-            # TODO: describe how the AdamOptimizer works
             optimizer = tf.train.AdamOptimizer(learning_rate).minimize(training_loss)
 
             print("Training LSTM for Testing")
@@ -99,7 +98,7 @@ class RecurrentNeuralNetwork(object):
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 20000
+        steps = 12000
         training_accuracy = list()
         losses = list()
         with tf.Session(graph=graph) as session:
@@ -124,7 +123,7 @@ class RecurrentNeuralNetwork(object):
 
                 _, loss, predictions = session.run(
                     [optimizer, training_loss, training_predictions], feed_dict=feed_dictionary)
-                training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
+                #training_accuracy.append(self.compute_predictions_accuracy(predictions, minibatch_labels))
                 losses.append(loss)
 
                 if (step % 500 == 0):
@@ -136,14 +135,16 @@ class RecurrentNeuralNetwork(object):
                 tf_input_data, tf_input_labels, tf_keep_probability,
                 validation_data, validation_labels, 1.0)
 
+            validation_pred = validation_predictions.eval(feed_dict=validation_feed_dictionary)
+
             validation_accuracy = self.compute_predictions_accuracy(
-                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+                validation_pred, validation_labels)
 
             confussion_matrix = self.compute_confussion_matrix(
-                            validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+                            validation_pred, validation_labels)
 
             ROC_points = self.compute_ROC_points(
-                validation_predictions.eval(feed_dict=validation_feed_dictionary), validation_labels)
+                validation_pred, validation_labels)
 
             print('Validation accuracy: %.1f%%' % validation_accuracy)
 
@@ -325,12 +326,12 @@ class RecurrentNeuralNetwork(object):
         input_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
 
-        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=math.sqrt(1/num_units)),
                          compute_uv=True, full_matrices=False)
 
         input_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
-        #input_U = tf.Variable(
-           # tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        input_U = tf.Variable(
+            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
         weights['LSTM_input_W'] = input_W
         weights['LSTM_input_U'] = input_U
 
@@ -341,12 +342,12 @@ class RecurrentNeuralNetwork(object):
         forget_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
 
-        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=math.sqrt(1/num_units)),
                          compute_uv=True, full_matrices=False)
 
         forget_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
-        #forget_U = tf.Variable(
-            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        forget_U = tf.Variable(
+            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
         weights['LSTM_forget_W'] = forget_W
         weights['LSTM_forget_U'] = forget_U
 
@@ -358,13 +359,13 @@ class RecurrentNeuralNetwork(object):
         memory_cell_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
 
-        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=math.sqrt(1/num_units)),
                          compute_uv=True, full_matrices=False)
 
         memory_cell_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
         #memory_cell_U = tf.Variable(tf.diag(tf.ones(num_units)))
-        #memory_cell_U = tf.Variable(
-            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        memory_cell_U = tf.Variable(
+            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
 
         weights['LSTM_memory_cell_W'] = memory_cell_W
         weights['LSTM_memory_cell_U'] = memory_cell_U
@@ -376,12 +377,12 @@ class RecurrentNeuralNetwork(object):
         output_W = tf.Variable(
             tf.truncated_normal([input_size, num_units], stddev=math.sqrt(2.0 / float(input_size + num_units))))
 
-        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=1),
+        s, u, v = tf.svd(tf.random_normal([num_units, num_units], mean=0, stddev=math.sqrt(1/num_units)),
                          compute_uv=True, full_matrices=False)
 
         output_U = tf.Variable(tf.reshape(v, [num_units, num_units]))
-        #output_U = tf.Variable(
-            #tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
+        output_U = tf.Variable(
+            tf.truncated_normal([num_units, num_units], stddev=math.sqrt(2.0 / float(num_units + num_units))))
         weights['LSTM_output_W'] = output_W
         weights['LSTM_output_U'] = output_U
 
@@ -632,9 +633,11 @@ class RecurrentNeuralNetwork(object):
                          tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_W']) + \
                          tf.nn.l2_loss(weights['LSTM_2']['LSTM_output_U'])
 
-        loss = tf.reduce_mean(
-            cross_entropy + weight_decay * (
-                FCL_L2_loss + LSTM_1_L2_loss + LSTM_2_L2_loss))
+        #loss = tf.reduce_mean(
+            #cross_entropy + weight_decay * (
+                #FCL_L2_loss + LSTM_1_L2_loss + LSTM_2_L2_loss))
+
+        loss = tf.reduce_mean(cross_entropy + weight_decay * FCL_L2_loss)
 
         return loss
 
@@ -646,9 +649,9 @@ class RecurrentNeuralNetwork(object):
         """
         num_correct_labels = 0
         for index in range(predictions.shape[0]):
+            #print str(np.argmax(predictions[index])) + " " + str(np.argmax(labels[index]))
             if np.argmax(predictions[index]) == np.argmax(labels[index]):
                 num_correct_labels += 1
-
         return (100 * num_correct_labels) / predictions.shape[0]
 
     def compute_confussion_matrix(self, predictions, labels):
@@ -656,8 +659,9 @@ class RecurrentNeuralNetwork(object):
         confusion_matrix = np.zeros(shape=(self.output_size, self.output_size))
         for index in range(predictions.shape[0]):
             predicted_class_index = np.argmax(predictions[index])
+            #print str(predictions[index]) + " " + str(predicted_class_index)
             actual_class_index = np.argmax(labels[index])
-
+            #print str(labels[index]) + " " + str(actual_class_index)
             confusion_matrix[actual_class_index][predicted_class_index] += 1
 
         return confusion_matrix
@@ -669,8 +673,6 @@ class RecurrentNeuralNetwork(object):
         ROC_points['y_score'] = []
 
         for index in range(test_predictions.shape[0]):
-            print test_predictions[index]
-            print test_labels[index]
             true_class = np.argmax(test_labels[index])
             ROC_points['y_true'] += [true_class]
 

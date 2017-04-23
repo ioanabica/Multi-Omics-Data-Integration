@@ -2,7 +2,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist, squareform, euclidean, correlation
-from scipy.cluster.hierarchy import linkage,dendrogram
+from scipy.cluster.hierarchy import linkage,dendrogram, set_link_color_palette
 
 epsilon = 0.00001
 
@@ -89,7 +89,10 @@ def plot_dendogram(gene_id_to_expression_levels):
 
     plt.ylabel("Distance", fontsize=24)
     plt.xlabel("Gene Id", fontsize=24)
+
+    set_link_color_palette(None)
     plt.show()
+    plt.savefig('dendogram.png')
 
 
 

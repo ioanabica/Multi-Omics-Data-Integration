@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from evaluation_metrics import *
 
 from hyperparameters_tuning import choose_hyperparameters, choose_hyperparameters_for_RNN
 
@@ -13,6 +14,9 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
     confussion_matrix = np.zeros(shape=(output_size, output_size))
     validation_accuracy_list = list()
     ROC_points = dict()
+
+    class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data.label_to_one_hot_encoding)
+    performance_metrics = dict()
 
     """ Outer cross-validation """
 
@@ -42,14 +46,18 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
 
+        performance_metrics[key] = compute_evaluation_metrics_for_each_class(
+            ffnn_confussion_matrix, class_id_to_class_symbol)
+
         print ffnn_confussion_matrix
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
         ROC_points[key] = MLP_ROC_points
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
 
-    return average_validation_accuracy, confussion_matrix, ROC_points
+    return confussion_matrix, ROC_points, performance_metrics
 
 
 def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
@@ -65,6 +73,9 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
     validation_accuracy_list = list()
     ROC_points = dict()
 
+    class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data_with_clusters.label_to_one_hot_encoding)
+    performance_metrics = dict()
+
     """ Outer cross-validation """
 
     for key in keys:
@@ -74,7 +85,7 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
         learning_rate = 0.05
-        weight_decay = 0.02
+        weight_decay = 0.01
         keep_probability = 0.6
 
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
@@ -85,13 +96,17 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 
         print snn_confussion_matrix
 
+        performance_metrics[key] = compute_evaluation_metrics_for_each_class(
+            snn_confussion_matrix, class_id_to_class_symbol)
+
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, snn_confussion_matrix)
         ROC_points[key] = snn_ROC_points
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
 
-    return average_validation_accuracy, confussion_matrix, ROC_points
+    return confussion_matrix, ROC_points, performance_metrics
 
 
 def nested_cross_validation_on_RNN(network, epigenetic_data):
@@ -104,6 +119,11 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
     confussion_matrix = np.zeros(shape=(output_size, output_size))
     validation_accuracy_list = list()
 
+    class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data.label_to_one_hot_encoding)
+    print class_id_to_class_symbol
+
+    performance_metrics = dict()
+
     ROC_points = dict()
 
     """ Outer cross-validation """
@@ -113,8 +133,10 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
 
         #learning_rate, weight_decay, keep_probability = choose_hyperparameters_for_RNN(
             #network, k_fold_datasets_hyperparameters_tuning[key])
+
+        # Hyperparameters for Embryo Development data
         learning_rate = 0.0001
-        weight_decay = 0.02
+        weight_decay = 0.001
         keep_probability = 0.7
 
         print "Learning rate" + str(learning_rate)
@@ -134,13 +156,17 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
             learning_rate, weight_decay, keep_probability)
         print rnn_confussion_matrix
 
+        performance_metrics[key] = compute_evaluation_metrics_for_each_class(
+            rnn_confussion_matrix, class_id_to_class_symbol)
+
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)
         ROC_points[key] = rnn_ROC_points
 
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
-    return average_validation_accuracy, confussion_matrix, ROC_points
+    return confussion_matrix, ROC_points, performance_metrics
 
 
 def plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, RNN_validation_accuracy):

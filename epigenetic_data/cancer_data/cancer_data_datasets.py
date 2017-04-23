@@ -282,6 +282,14 @@ def create_k_fold_patient_ids(k, label_to_patient_ids):
             k_fold_patient_ids[index] += patient_ids[index*group_size:(index+1)*group_size]
         k_fold_patient_ids[k-1] += patient_ids[(k-1)*group_size:]
 
+    keys = k_fold_patient_ids.keys()
+    print k_fold_patient_ids
+    for key in keys:
+        patient_ids = k_fold_patient_ids[key]
+        np.random.shuffle(patient_ids)
+        k_fold_patient_ids[key] = patient_ids
+    print k_fold_patient_ids
+
     return k_fold_patient_ids
 
 
@@ -324,7 +332,7 @@ def create_k_fold_datasets(
         k_fold_datasets[index_i]["validation_dataset"] = validation_dataset
 
     return k_fold_datasets
-
+0
 
 def create_k_fold_datasets_with_clusters(
         k, k_fold_patient_ids, clusters_size, output_size,

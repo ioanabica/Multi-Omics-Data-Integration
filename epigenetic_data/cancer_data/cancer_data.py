@@ -123,7 +123,7 @@ class CancerPatientsDataWithModalities(CancerPatientsData):
         self.k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
 
         self.k_fold_datasets = create_k_fold_datasets_with_clusters(
-            self.num_folds, self.k_fold_patient_ids, self.modalities_size, self.output_size,
+            self.num_folds, self.k_fold_patient_ids, self.clusters_size, self.output_size,
             self.patient_id_to_input_clusters, self.label_to_one_hot_encoding,
             self.patient_id_to_label)
 
@@ -142,7 +142,7 @@ class CancerPatientsDataWithModalities(CancerPatientsData):
                 self.num_folds_hyperparameters_tuning, labels_to_patient_ids)
 
             k_fold_dataset = create_k_fold_datasets_with_clusters(
-                self.num_folds_hyperparameters_tuning, k_fold_patient_ids_hyperparameters_tuning, self.modalities_size, self.output_size,
+                self.num_folds_hyperparameters_tuning, k_fold_patient_ids_hyperparameters_tuning, self.clusters_size, self.output_size,
                 self.patient_id_to_input_clusters, self.label_to_one_hot_encoding,
                 self.patient_id_to_label)
 
