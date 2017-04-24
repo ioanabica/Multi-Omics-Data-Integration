@@ -161,7 +161,6 @@ def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_cla
         else:
             precision = true_positives / (true_positives + false_positives)
 
-
         if true_positives + false_negatives == 0:
             sensitivity = 0
         else:
@@ -169,9 +168,13 @@ def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_cla
 
         f1_score = (2 * true_positives) / (2 * true_positives + false_positives + false_negatives)
 
-        MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
-              (math.sqrt((true_positives + false_positives) * (true_positives + false_negatives) * \
-                         (true_negatives + false_positives) * (true_negatives + false_negatives)))
+        if (true_negatives + false_positives == 0) or (true_negatives + false_negatives == 0):
+            MCC = 0
+        else:
+            MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
+                  (math.sqrt((true_positives + false_positives) *
+                             (true_positives + false_negatives) *
+                             (true_negatives + false_positives) * (true_negatives + false_negatives)))
 
         class_symbol_to_evaluation_metrics[class_symbol]['true_positives'] = true_positives
         class_symbol_to_evaluation_metrics[class_symbol]['false_positives'] = false_positives
@@ -394,7 +397,6 @@ def paired_t_test_multiclass_classification(performance_metrics_first_model, per
     return p_values
 
 
-
 def compute_micro_average(class_symbol_to_performance_metrics):
 
     micro_average = dict()
@@ -437,6 +439,7 @@ def compute_micro_average(class_symbol_to_performance_metrics):
     micro_average['MCC'] = MCC
 
     return micro_average
+
 
 def compute_macro_average(class_symbol_to_performance_metrics):
 
