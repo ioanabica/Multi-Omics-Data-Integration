@@ -167,7 +167,8 @@ class CancerPatientsDataDNAMethylationLevels(CancerPatientsData):
         CancerPatientsData.__init__(self, num_folds, num_folds_hyperparameters_tuning)
 
         patient_ids = self.patient_id_to_label.keys()
-        self.input_data_size = len(self.patient_id_to_dna_methylation[patient_ids[0]])
+        self.input_size = len(self.patient_id_to_dna_methylation[patient_ids[0]])
+        print self.input_size
 
         labels = self.label_to_patient_ids.keys()
         self.output_size = len(labels)
@@ -183,7 +184,7 @@ class CancerPatientsDataDNAMethylationLevels(CancerPatientsData):
         print k_fold_patient_ids
 
         self.k_fold_datasets = create_k_fold_datasets(
-            self.num_folds, k_fold_patient_ids, self.input_data_size, self.output_size,
+            self.num_folds, k_fold_patient_ids, self.input_size, self.output_size,
             self.patient_id_to_dna_methylation, self.label_to_one_hot_encoding,
             self.patient_id_to_label)
 
@@ -203,7 +204,7 @@ class CancerPatientsDataDNAMethylationLevels(CancerPatientsData):
 
             k_fold_dataset = create_k_fold_datasets(
                 self.num_folds_hyperparameters_tuning, k_fold_patient_ids_hyperparameters_tuning,
-                self.input_data_size, self.output_size,
+                self.input_size, self.output_size,
                 self.patient_id_to_dna_methylation, self.label_to_one_hot_encoding,
                 self.patient_id_to_label)
 

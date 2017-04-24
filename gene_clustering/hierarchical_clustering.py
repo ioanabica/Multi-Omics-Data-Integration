@@ -87,10 +87,12 @@ def plot_dendogram(gene_id_to_expression_levels):
     distance_matrix = pdist(gene_expressions, metric='correlation')
     dendrogram(linkage(distance_matrix, method='weighted'), labels=gene_ids)
 
-    plt.ylabel("Distance", fontsize=24)
-    plt.xlabel("Gene Id", fontsize=24)
+    plt.ylabel("Distance", fontsize=28)
+    plt.xlabel("Gene Id", fontsize=28)
 
-    set_link_color_palette(None)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+
     plt.show()
     plt.savefig('dendogram.png')
 

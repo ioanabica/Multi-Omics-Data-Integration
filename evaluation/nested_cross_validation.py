@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from evaluation_metrics import *
+import matplotlib.pyplot as plt
 
 from hyperparameters_tuning import choose_hyperparameters, choose_hyperparameters_for_RNN
 
@@ -27,8 +28,8 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
         learning_rate = 0.05
-        weight_decay = 0.05
-        keep_probability = 0.8
+        weight_decay = 0.01
+        keep_probability = 0.7
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -86,7 +87,7 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 
         learning_rate = 0.05
         weight_decay = 0.01
-        keep_probability = 0.6
+        keep_probability = 0.8
 
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
@@ -158,6 +159,7 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
 
         performance_metrics[key] = compute_evaluation_metrics_for_each_class(
             rnn_confussion_matrix, class_id_to_class_symbol)
+
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)

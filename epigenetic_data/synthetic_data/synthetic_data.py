@@ -4,11 +4,12 @@ from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwor
 from neural_network_models.multilayer_perceptron import MultilayerPerceptron
 
 
+
 num_classes = 2
 num_genes = 256
 num_shifted_genes = 16
-training_examples_for_class = 100
-validation_examples_for_class = 20
+training_examples_for_class = 200
+validation_examples_for_class = 40
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -42,7 +43,7 @@ def create_data_point(num_genes, class_id, class_id_to_shifted_genes):
     stddev = 1
     data_point = np.random.normal(mean, stddev, num_genes)
 
-    shifted_mean = 5
+    shifted_mean = 1
 
     """
     start_class_genes = class_id * (num_genes/num_classes)
@@ -146,9 +147,10 @@ class SyntheticData(object):
     training_dataset = create_training_dataset(class_id_to_shifted_genes)
     validation_dataset = create_validation_dataset(class_id_to_shifted_genes)
 
-    #ffnn = FeedforwardNeuralNetwork(num_genes, [256, 128, 64, 32], num_classes)
-    #validation_accuracy = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
+    ffnn = MultilayerPerceptron(num_genes, [256, 128, 64, 32], num_classes)
+    validation_accuracy, ffnn_confussion_matrix, ROC_points = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
 
+    print ffnn_confussion_matrix
 
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=16, input_step_size=16,

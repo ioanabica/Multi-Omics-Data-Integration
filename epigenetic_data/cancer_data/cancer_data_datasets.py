@@ -283,12 +283,10 @@ def create_k_fold_patient_ids(k, label_to_patient_ids):
         k_fold_patient_ids[k-1] += patient_ids[(k-1)*group_size:]
 
     keys = k_fold_patient_ids.keys()
-    print k_fold_patient_ids
     for key in keys:
         patient_ids = k_fold_patient_ids[key]
         np.random.shuffle(patient_ids)
         k_fold_patient_ids[key] = patient_ids
-    print k_fold_patient_ids
 
     return k_fold_patient_ids
 

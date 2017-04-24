@@ -8,7 +8,13 @@ learning_rate_values = [0.01, 0.02, 0.03, 0.04, 0.05]
 learning_rate_values_for_RNN = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005]
 
 weight_decay_values = [0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
-keep_probability_values = [0.25, 0.35, 0.5, 0.75, 0.8]
+#keep_probability_values = [0.25, 0.35, 0.5, 0.75, 0.8]
+
+keep_probability_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+learning_rate_values = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.5, 1]
+weight_decay_values = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
+
+
 
 
 def choose_hyperparameters(network, k_fold_datasets):
@@ -35,14 +41,26 @@ def choose_keep_probability(network, k_fold_datasets, fixed_learning_rate, fixed
 
     print "Choosing dropout"
 
+    mean_error_rates = []
+    std_error_rates = []
+
     for keep_probability in keep_probability_values:
-        average_validation_accuracy = inner_cross_validation(
-            network, k_fold_datasets, fixed_learning_rate, fixed_weight_decay, keep_probability)
+        error_rate_list = []
+        for i in range(10):
+            error_rates, average_validation_accuracy = inner_cross_validation(
+                network, k_fold_datasets, fixed_learning_rate, fixed_weight_decay, keep_probability)
+            error_rate_list += error_rates
+
+        average_error_rate = np.mean(error_rate_list)
+        std_error_rate = np.std(error_rate_list)
+
+        mean_error_rates += [average_error_rate]
+        std_error_rates += [std_error_rate]
 
         if average_validation_accuracy > max_validation_accuracy:
             best_keep_probability = keep_probability
 
-    return best_keep_probability
+    return best_keep_probability, mean_error_rates, std_error_rates
 
 
 def choose_weight_decay(network, k_fold_datasets, fixed_learning_rate, fixed_keep_probability):
@@ -50,15 +68,28 @@ def choose_weight_decay(network, k_fold_datasets, fixed_learning_rate, fixed_kee
     max_validation_accuracy = 0
     best_weight_decay = 0
 
-    for weight_decay in weight_decay_values:
+    "Choosing weight decay"
 
-        average_validation_accuracy = inner_cross_validation(
-            network, k_fold_datasets, fixed_learning_rate, weight_decay, fixed_keep_probability)
+    mean_error_rates = []
+    std_error_rates = []
+
+    for weight_decay in weight_decay_values:
+        error_rate_list = []
+        for i in range(10):
+            error_rates, average_validation_accuracy = inner_cross_validation(
+                network, k_fold_datasets, fixed_learning_rate, weight_decay, fixed_keep_probability)
+            error_rate_list += error_rates
+
+        average_error_rate = np.mean(error_rate_list)
+        std_error_rate = np.std(error_rate_list)
+
+        mean_error_rates += [average_error_rate]
+        std_error_rates += [std_error_rate]
 
         if average_validation_accuracy > max_validation_accuracy:
             best_weight_decay = weight_decay
 
-    return best_weight_decay
+    return best_weight_decay, mean_error_rates, std_error_rates
 
 
 def choose_learning_rate(network, k_fold_datasets, fixed_weight_decay, fixed_keep_probability):
@@ -66,15 +97,25 @@ def choose_learning_rate(network, k_fold_datasets, fixed_weight_decay, fixed_kee
     max_validation_accuracy = 0
     best_learning_rate = 0
 
-    for learning_rate in learning_rate_values:
+    mean_error_rates = []
+    std_error_rates = []
 
-        average_validation_accuracy = inner_cross_validation(
-            network, k_fold_datasets, learning_rate, fixed_weight_decay, fixed_keep_probability)
+    for learning_rate in learning_rate_values:
+        error_rate_list = []
+        for i in range(10):
+            error_rates, average_validation_accuracy = inner_cross_validation(
+                network, k_fold_datasets, learning_rate, fixed_weight_decay, fixed_keep_probability)
+
+        average_error_rate = np.mean(error_rate_list)
+        std_error_rate = np.std(error_rate_list)
+
+        mean_error_rates += [average_error_rate]
+        std_error_rates += [std_error_rate]
 
         if average_validation_accuracy >  max_validation_accuracy:
             best_learning_rate = learning_rate
 
-    return best_learning_rate
+    return best_learning_rate, mean_error_rates, std_error_rate
 
 
 def choose_learning_rate_for_RNN(network, k_fold_datasets, fixed_weight_decay, fixed_keep_probability):
@@ -97,6 +138,7 @@ def inner_cross_validation(network, k_fold_datasets, learning_rate, weight_decay
 
     keys = k_fold_datasets.keys()
     validation_accuracy_list = list()
+    error_rate_list = list()
 
     print learning_rate
     print weight_decay
@@ -116,11 +158,15 @@ def inner_cross_validation(network, k_fold_datasets, learning_rate, weight_decay
             training_dataset, validation_dataset,
             learning_rate, weight_decay, keep_probability)
 
+        error_rate = float(1.0 - float(validation_accuracy)/100.0)
+        print error_rate
+
         validation_accuracy_list.append(validation_accuracy)
+        error_rate_list.append(error_rate)
 
     average_validation_accuracy = np.mean(validation_accuracy_list)
 
-    return average_validation_accuracy
+    return error_rate_list, average_validation_accuracy
 
 
 
