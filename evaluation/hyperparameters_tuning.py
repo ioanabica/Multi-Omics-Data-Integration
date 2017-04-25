@@ -4,11 +4,10 @@ import numpy as np
 
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
-learning_rate_values = [0.01, 0.02, 0.03, 0.04, 0.05]
-learning_rate_values_for_RNN = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005]
+#learning_rate_values = [0.01, 0.02, 0.03, 0.04, 0.05]
+#learning_rate_values_for_RNN = [0.0001, 0.0002, 0.0003, 0.0004, 0.0005]
 
-weight_decay_values = [0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
-#keep_probability_values = [0.25, 0.35, 0.5, 0.75, 0.8]
+#weight_decay_values = [0.005, 0.01, 0.02, 0.03, 0.04, 0.05]
 
 keep_probability_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 learning_rate_values = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.5, 1]
@@ -45,14 +44,12 @@ def choose_keep_probability(network, k_fold_datasets, fixed_learning_rate, fixed
     std_error_rates = []
 
     for keep_probability in keep_probability_values:
-        error_rate_list = []
-        for i in range(10):
-            error_rates, average_validation_accuracy = inner_cross_validation(
-                network, k_fold_datasets, fixed_learning_rate, fixed_weight_decay, keep_probability)
-            error_rate_list += error_rates
+        print "Computing for keep probability " + str(keep_probability)
+        error_rates, average_validation_accuracy = inner_cross_validation(
+            network, k_fold_datasets, fixed_learning_rate, fixed_weight_decay, keep_probability)
 
-        average_error_rate = np.mean(error_rate_list)
-        std_error_rate = np.std(error_rate_list)
+        average_error_rate = np.mean(error_rates)
+        std_error_rate = np.std(error_rates)
 
         mean_error_rates += [average_error_rate]
         std_error_rates += [std_error_rate]
@@ -74,14 +71,12 @@ def choose_weight_decay(network, k_fold_datasets, fixed_learning_rate, fixed_kee
     std_error_rates = []
 
     for weight_decay in weight_decay_values:
-        error_rate_list = []
-        for i in range(10):
-            error_rates, average_validation_accuracy = inner_cross_validation(
-                network, k_fold_datasets, fixed_learning_rate, weight_decay, fixed_keep_probability)
-            error_rate_list += error_rates
+        print "Computing for weight decay" + str(weight_decay)
+        error_rates, average_validation_accuracy = inner_cross_validation(
+            network, k_fold_datasets, fixed_learning_rate, weight_decay, fixed_keep_probability)
 
-        average_error_rate = np.mean(error_rate_list)
-        std_error_rate = np.std(error_rate_list)
+        average_error_rate = np.mean(error_rates)
+        std_error_rate = np.std(error_rates)
 
         mean_error_rates += [average_error_rate]
         std_error_rates += [std_error_rate]
@@ -101,13 +96,12 @@ def choose_learning_rate(network, k_fold_datasets, fixed_weight_decay, fixed_kee
     std_error_rates = []
 
     for learning_rate in learning_rate_values:
-        error_rate_list = []
-        for i in range(10):
-            error_rates, average_validation_accuracy = inner_cross_validation(
-                network, k_fold_datasets, learning_rate, fixed_weight_decay, fixed_keep_probability)
+        print "Computing for learning rate " + str(learning_rate)
+        error_rates, average_validation_accuracy = inner_cross_validation(
+            network, k_fold_datasets, learning_rate, fixed_weight_decay, fixed_keep_probability)
 
-        average_error_rate = np.mean(error_rate_list)
-        std_error_rate = np.std(error_rate_list)
+        average_error_rate = np.mean(error_rates)
+        std_error_rate = np.std(error_rates)
 
         mean_error_rates += [average_error_rate]
         std_error_rates += [std_error_rate]
@@ -115,7 +109,7 @@ def choose_learning_rate(network, k_fold_datasets, fixed_weight_decay, fixed_kee
         if average_validation_accuracy >  max_validation_accuracy:
             best_learning_rate = learning_rate
 
-    return best_learning_rate, mean_error_rates, std_error_rate
+    return best_learning_rate, mean_error_rates, std_error_rates
 
 
 def choose_learning_rate_for_RNN(network, k_fold_datasets, fixed_weight_decay, fixed_keep_probability):

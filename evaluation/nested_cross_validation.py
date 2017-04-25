@@ -140,6 +140,10 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         weight_decay = 0.001
         keep_probability = 0.7
 
+        #learning_rate = 0.0005
+        #weight_decay = 0.001
+        #keep_probability = 1
+
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
         print "Keep_probability" + str(keep_probability)

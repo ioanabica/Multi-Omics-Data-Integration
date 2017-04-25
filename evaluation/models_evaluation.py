@@ -21,10 +21,11 @@ from evaluation.nested_cross_validation import nested_cross_validation_on_MLP, n
 
 def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters):
 
-    snn_confussion_matrix, snn_ROC_points, snn_performance_metrics = evaluate_superlayered_neural_network(
-        epigenetic_data_with_clusters)
+
     rnn_confussion_matrix, rnn_ROC_points, rnn_performance_metrics = evaluate_recurrent_neural_network(epigenetic_data)
     mlp_confussion_matrix, mlp_ROC_points, mlp_performance_metrics = evaluate_feed_forward_neural_network(epigenetic_data)
+    snn_confussion_matrix, snn_ROC_points, snn_performance_metrics = evaluate_superlayered_neural_network(
+        epigenetic_data_with_clusters)
 
     p_values_mlp_rnn = paired_t_test_binary_classification(mlp_performance_metrics, rnn_performance_metrics)
     p_values_mlp_snn = paired_t_test_binary_classification(mlp_performance_metrics, snn_performance_metrics)
@@ -118,6 +119,7 @@ def evaluate_recurrent_neural_network(epigenetic_data):
     print "-------------------------------------------------------------------------------"
 
     input_data_size = epigenetic_data.input_size
+    print input_data_size
     output_size = epigenetic_data.output_size
 
     """"  Architecture for cancer data """
@@ -132,6 +134,10 @@ def evaluate_recurrent_neural_network(epigenetic_data):
         LSTM_units_state_size=[32, 128], hidden_units=[128, 32],
         output_size=output_size)
 
+    """recurrent_neural_network = RecurrentNeuralNetwork(
+        input_sequence_length=input_data_size / 2, input_step_size=2,
+        LSTM_units_state_size=[32, 64], hidden_units=[32, 32],
+        output_size=output_size)"""
 
     """ Architecture for embryo development data
     recurrent_neural_network = RecurrentNeuralNetwork(
@@ -203,8 +209,9 @@ def get_cancer_data():
 #plot_dendogram(epigenetic_data.geneId_to_expression_levels)
 
 
-
 epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_cancer_data()
 evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters)
 
 
+#print "Evaluate for single modality"
+#evaluate_neural_network_models(epigenetic_data_for_single_cluster, epigenetic_data_with_clusters)
