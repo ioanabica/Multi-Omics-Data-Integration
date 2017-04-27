@@ -98,7 +98,8 @@ class RecurrentNeuralNetwork(object):
 
             validation_predictions = tf.nn.softmax(validation_logits)
 
-        steps = 12000
+        #steps = 12000
+        steps = 15000
         training_accuracy = list()
         losses = list()
         with tf.Session(graph=graph) as session:

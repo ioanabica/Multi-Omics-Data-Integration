@@ -94,7 +94,6 @@ def plot_dendogram(gene_id_to_expression_levels):
     plt.yticks(fontsize=14)
 
     plt.show()
-    plt.savefig('dendogram.png')
 
 
 

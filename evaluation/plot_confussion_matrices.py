@@ -49,14 +49,19 @@ def plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encodi
     labels = ['Oocyte', 'Zygote', '2-cell', '4-cell', '8-cell', 'Morulae', 'Late\n blastocyst']
     df_cm = pd.DataFrame(confussion_matrix, index=[i for i in labels], columns=[i for i in labels])
 
-    fig = plt.figure(figsize=(8, 20), dpi=150)
-    ax = plt.subplot(111)
-    sn.heatmap(df_cm, annot=True)
+    #fig = plt.figure(figsize=(8, 10), dpi=150)
+    fig, ax = plt.subplots(figsize=(10, 15), dpi=150)
+    sn.heatmap(df_cm, annot=True, ax=ax, cbar=False)
 
     ax.xaxis.set_ticks_position('top')
     #plt.xticks(rotation=30)
     plt.yticks(rotation=0)
     plt.title(plt_title, size=18, y=-0.08)
+
+    plt.xlabel('Predicted Class', size=14)
+    #ax.xaxis.set_label_position('top')
+    ax.xaxis.set_label_coords(0.5, 1.1)
+    plt.ylabel('Actual Class', size=14)
     plt.show()
 
 

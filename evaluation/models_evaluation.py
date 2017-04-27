@@ -2,7 +2,7 @@ import numpy as np
 import math
 from evaluation_metrics import paired_t_test_binary_classification, compute_average_performance_metrics_for_binary_classification, \
     compute_class_id_to_class_symbol, compute_evaluation_metrics_for_each_class, \
-    compute_performance_metrics_for_multiclass_classification, plot_mean_ROC_curves
+    compute_performance_metrics_for_multiclass_classification, plot_mean_ROC_curves, paired_t_test_multiclass_classification
 from plot_confussion_matrices import plot_confussion_matrix_as_heatmap_for_cancer_data, plot_confussion_matrix_as_heatmap
 from gene_clustering.hierarchical_clustering import plot_dendogram
 
@@ -21,16 +21,19 @@ from evaluation.nested_cross_validation import nested_cross_validation_on_MLP, n
 
 def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters):
 
-
     rnn_confussion_matrix, rnn_ROC_points, rnn_performance_metrics = evaluate_recurrent_neural_network(epigenetic_data)
-    mlp_confussion_matrix, mlp_ROC_points, mlp_performance_metrics = evaluate_feed_forward_neural_network(epigenetic_data)
+
+
+    mlp_confussion_matrix, mlp_ROC_points, mlp_performance_metrics = evaluate_feed_forward_neural_network(
+        epigenetic_data)
+
     snn_confussion_matrix, snn_ROC_points, snn_performance_metrics = evaluate_superlayered_neural_network(
         epigenetic_data_with_clusters)
 
+    """ Evaluation metrics for cancer data
     p_values_mlp_rnn = paired_t_test_binary_classification(mlp_performance_metrics, rnn_performance_metrics)
     p_values_mlp_snn = paired_t_test_binary_classification(mlp_performance_metrics, snn_performance_metrics)
     p_values_rnn_snn = paired_t_test_binary_classification(rnn_performance_metrics, snn_performance_metrics)
-
 
     print "Comparing MLP vs RNN"
     print p_values_mlp_rnn
@@ -41,11 +44,43 @@ def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_cluster
     print "Comparing RNN vs SNN"
     print p_values_rnn_snn
 
-    plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points)
-
     plot_confussion_matrix_as_heatmap_for_cancer_data(mlp_confussion_matrix, "Confusion Matrix for MLP")
     plot_confussion_matrix_as_heatmap_for_cancer_data(rnn_confussion_matrix, "Confusion Matrix for RNN")
-    plot_confussion_matrix_as_heatmap_for_cancer_data(snn_confussion_matrix, "Confusion Matrix for SNN")
+    plot_confussion_matrix_as_heatmap_for_cancer_data(snn_confussion_matrix, "Confusion Matrix for SNN")"""
+
+    p_values_mlp_rnn_micro = paired_t_test_multiclass_classification(
+        mlp_performance_metrics['micro'], rnn_performance_metrics['micro'])
+    p_values_mlp_snn_micro = paired_t_test_multiclass_classification(
+        mlp_performance_metrics['micro'], snn_performance_metrics['micro'])
+    p_values_rnn_snn_micro = paired_t_test_multiclass_classification(
+        rnn_performance_metrics['micro'], snn_performance_metrics['micro'])
+
+    p_values_mlp_rnn_macro = paired_t_test_multiclass_classification(
+        mlp_performance_metrics['macro'], rnn_performance_metrics['macro'])
+    p_values_mlp_snn_macro = paired_t_test_multiclass_classification(
+        mlp_performance_metrics['macro'], snn_performance_metrics['macro'])
+    p_values_rnn_snn_macro = paired_t_test_multiclass_classification(
+        rnn_performance_metrics['macro'], snn_performance_metrics['macro'])
+
+    print "Comparing MLP vs RNN"
+    print "Micro"
+    print p_values_mlp_rnn_micro
+    print "Macro"
+    print p_values_mlp_rnn_macro
+
+    print "Comparing MLP vs SNN"
+    print "Micro"
+    print p_values_mlp_snn_micro
+    print "Macro"
+    print p_values_mlp_snn_macro
+
+    print "Comparing RNN vs SNN"
+    print "Micro"
+    print p_values_rnn_snn_micro
+    print "Macro"
+    print p_values_rnn_snn_macro
+
+    return mlp_performance_metrics, rnn_performance_metrics, snn_performance_metrics
 
 
 def evaluate_feed_forward_neural_network(epigenetic_data):
@@ -61,13 +96,13 @@ def evaluate_feed_forward_neural_network(epigenetic_data):
     output_size = epigenetic_data.output_size
 
     """feed_forward_neural_network = MultilayerPerceptron(input_data_size, [256, 128, 64, 32], output_size)"""
-    """feed_forward_neural_network = MultilayerPerceptron(input_data_size, [128, 64, 32, 16], output_size)"""
+    feed_forward_neural_network = MultilayerPerceptron(128, [128, 64, 32, 16], output_size)
 
-    feed_forward_neural_network = MultilayerPerceptron(input_data_size, [64, 32, 16, 8], output_size)
+    """feed_forward_neural_network = MultilayerPerceptron(input_data_size, [64, 32, 16, 8], output_size)"""
     confussion_matrix, ROC_points, performance_metrics = nested_cross_validation_on_MLP(feed_forward_neural_network, epigenetic_data)
 
     label_to_one_hot_encoding = epigenetic_data.label_to_one_hot_encoding
-    #plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for MLP')
+    plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for MLP')
 
     #plot_ROC_curves(ROC_points)
 
@@ -90,8 +125,8 @@ def evaluate_superlayered_neural_network(epigenetic_data_with_clusters):
 
     superlayered_neural_network = SuperlayeredNeuralNetwork(
         [clusters_size[0], clusters_size[1]],
-        [[256, 128, 64, 32], [256, 128, 64, 32]],
-        [64, 32], output_size)
+        [[512, 256, 128, 64], [512, 256, 128, 64]],
+        [256, 64], output_size)
 
     """superlayered_neural_network = SuperlayeredNeuralNetwork(
         [clusters_size[0], clusters_size[1]],
@@ -106,7 +141,7 @@ def evaluate_superlayered_neural_network(epigenetic_data_with_clusters):
     class_symbol_to_evaluation_matrix = compute_evaluation_metrics_for_each_class(
         confussion_matrix, class_id_to_symbol_id)
 
-    #plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for SNN')
+    plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for SNN')
     #plot_ROC_curves(ROC_points)
 
     return confussion_matrix, ROC_points, performance_metrics
@@ -125,15 +160,11 @@ def evaluate_recurrent_neural_network(epigenetic_data):
     """"  Architecture for cancer data """
 
     """recurrent_neural_network = RecurrentNeuralNetwork(
-        input_sequence_length=input_data_size/2, input_step_size=2,
-        LSTM_units_state_size=[32, 128], hidden_units=[32, 32],
-        output_size=output_size)"""
-
-    recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=input_data_size / 4, input_step_size=4,
         LSTM_units_state_size=[32, 128], hidden_units=[128, 32],
-        output_size=output_size)
+        output_size=output_size)"""
 
+    """"  Architecture for cancer data with single modaliy"""
     """recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=input_data_size / 2, input_step_size=2,
         LSTM_units_state_size=[32, 64], hidden_units=[32, 32],
@@ -143,43 +174,53 @@ def evaluate_recurrent_neural_network(epigenetic_data):
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=16, input_step_size=16,
         LSTM_units_state_size=[64, 128], hidden_units=[32, 32],
-        output_size=output_size) """
+        output_size=output_size)"""
+
+    """recurrent_neural_network = RecurrentNeuralNetwork(
+        input_sequence_length=8, input_step_size=16,
+        LSTM_units_state_size=[32, 128], hidden_units=[64, 32],
+        output_size=output_size)"""
+
+    recurrent_neural_network = RecurrentNeuralNetwork(
+        input_sequence_length=8, input_step_size=16,
+        LSTM_units_state_size=[64, 128], hidden_units=[128, 64],
+        output_size=output_size)
 
     confussion_matrix, ROC_points, performance_metrics = \
         nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data)
 
     label_to_one_hot_encoding = epigenetic_data.label_to_one_hot_encoding
-    #plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for RNN')
+    plot_confussion_matrix_as_heatmap(confussion_matrix, label_to_one_hot_encoding, 'Confusion Matrix for RNN')
 
     return confussion_matrix, ROC_points, performance_metrics
 
 
-def get_embryo_development_data():
+def get_embryo_development_data(clustering_algorithm):
 
     noise_mean = 0
     noise_stddev = 1
 
     print "Noise Characteristics"
-    print noise_mean
-    print noise_stddev
 
     """epigenetic_data = EmbryoDevelopmentData(
         num_folds=6, num_folds_hyperparameters_tuning=3, max_num_genes=256, gene_entropy_threshold=6.2) """
     epigenetic_data = EmbryoDevelopmentData(
-        num_folds=6, num_folds_hyperparameters_tuning=3, max_num_genes=16, gene_entropy_threshold=5.8)
+        num_folds=6, num_folds_hyperparameters_tuning=3, max_num_genes=128, gene_entropy_threshold=6.3)
     #epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_with_clusters = EmbryoDevelopmentDataWithClusters(
-        num_clusters=2, clustering_algorithm='k-means',
-        num_folds=5, num_folds_hyperparameters_tuning=3,
-        max_num_genes=500, gene_entropy_threshold=6.0)
+        num_clusters=2, clustering_algorithm=clustering_algorithm,
+        num_folds=6, num_folds_hyperparameters_tuning=3,
+        max_num_genes=500, gene_entropy_threshold=5.5)
     epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
+    print epigenetic_data_with_clusters.clusters_size
 
     epigenetic_data_for_single_cluster = EmbryoDevelopmentDataWithSingleCluster(
-        num_clusters=2, clustering_algorithm='hierarchical',
-        num_folds=5, num_folds_hyperparameters_tuning=3,
-        max_num_genes=100, gene_entropy_threshold=6.0)
+        num_clusters=2, clustering_algorithm=clustering_algorithm,
+        num_folds=6, num_folds_hyperparameters_tuning=3,
+        max_num_genes=400, gene_entropy_threshold=5.5)
     epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
+    print epigenetic_data_with_clusters.clusters_size
 
     return epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster
 
@@ -205,12 +246,74 @@ def get_cancer_data():
     return epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster
 
 
-#epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_embryo_development_data()
-#plot_dendogram(epigenetic_data.geneId_to_expression_levels)
 
 
-epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_cancer_data()
+def compare_clustering_algorithms():
+
+
+    print "Hierarchical Clustering"
+    _, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = \
+        get_embryo_development_data('hierarchical')
+    H_mlp_performance_metrics, H_rnn_performance_metrics, H_snn_performance_metrics = evaluate_neural_network_models(
+        epigenetic_data_for_single_cluster, epigenetic_data_with_clusters)
+
+
+    print "K-means clustering"
+    _, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = \
+        get_embryo_development_data('k-means')
+    K_mlp_performance_metrics, K_rnn_performance_metrics, K_snn_performance_metrics = evaluate_neural_network_models(
+        epigenetic_data_for_single_cluster, epigenetic_data_with_clusters)
+
+    print "Compare Clustering algorithm on MLP micro"
+    p_values_mlp_micro = paired_t_test_multiclass_classification(
+        H_mlp_performance_metrics['micro'], K_mlp_performance_metrics['micro'])
+
+    print "Compare Clustering algorithm on RNN micro"
+    p_values_rnn_micro = paired_t_test_multiclass_classification(
+        H_rnn_performance_metrics['micro'], K_mlp_performance_metrics['micro'])
+
+    print "Compare Clustering algorithm on SNN micro"
+    p_values_snn_micro = paired_t_test_multiclass_classification(
+        H_snn_performance_metrics['micro'], H_snn_performance_metrics['micro'])
+
+    print "Compare Clustering algorithm on MLP macro"
+    p_values_mlp_macro = paired_t_test_multiclass_classification(
+        H_mlp_performance_metrics['macro'], K_mlp_performance_metrics['macro'])
+
+    print "Compare Clustering algorithm on RNN micro"
+    p_values_rnn_macro = paired_t_test_multiclass_classification(
+        H_rnn_performance_metrics['macro'], K_rnn_performance_metrics['macro'])
+
+    print "Compare Clustering algorithm on SNN micro"
+    p_values_snn_macro = paired_t_test_multiclass_classification(
+        H_snn_performance_metrics['macro'], K_snn_performance_metrics['macro'])
+
+
+
+
+
+
+epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_embryo_development_data()
+#plot_dendogram(epigenetic_data_with_clusters.geneId_to_expression_levels)
+
+
+
 evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters)
+"Single cluster"
+
+
+
+
+
+
+
+
+
+
+
+
+#epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster = get_cancer_data()
+#evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters)
 
 
 #print "Evaluate for single modality"

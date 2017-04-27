@@ -11,7 +11,8 @@ from neural_network_models.superlayered_neural_network import SuperlayeredNeural
 
 keep_probability_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 learning_rate_values = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.5, 1]
-weight_decay_values = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
+
+weight_decay_values = [0.001, 0.00025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.5]
 
 
 

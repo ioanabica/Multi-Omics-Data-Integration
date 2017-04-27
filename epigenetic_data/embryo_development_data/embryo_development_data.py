@@ -91,7 +91,6 @@ class EmbryoDevelopmentData(EpigeneticData):
             self.embryo_id_to_gene_expression[embryo_id] = gene_expression
 
 
-
 class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
 
     def __init__(self,
@@ -182,8 +181,7 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
             self, num_clusters, clustering_algorithm,
                  num_folds, num_folds_hyperparameters_tuning,
                  max_num_genes, gene_entropy_threshold)
-        self.input_data_size = 256
-        print self.embryo_id_to_gene_expression_clusters
+        self.input_data_size = 128
 
     def get_k_fold_datasets(self):
 

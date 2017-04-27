@@ -12,8 +12,10 @@ from neural_network_models.superlayered_neural_network import SuperlayeredNeural
 from hyperparameters_tuning import choose_keep_probability, choose_learning_rate, choose_weight_decay
 
 keep_probability_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+
 learning_rate_values = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.5, 1]
-weight_decay_values = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
+
+weight_decay_values = [0.001, 0.00025, 0.005, 0.0075, 0.01, 0.025, 0.05, 0.075, 0.1, 0.5]
 
 
 def weight_decay_plots(network, k_fold_datasets_hyperparameters_tuning, learning_rate, title, figname):
@@ -28,14 +30,14 @@ def weight_decay_plots(network, k_fold_datasets_hyperparameters_tuning, learning
         k_fold_datasets = k_fold_datasets_hyperparameters_tuning[key]
         _, average, std = choose_weight_decay(network, k_fold_datasets, learning_rate, 1)
 
+        weight_decay_values = np.log10(weight_decay_values)
         plt.errorbar(weight_decay_values, average, yerr=std, lw=lw, label='Fold %d' % (key))
 
-    plt.xlabel('Weight decay values')
-    plt.ylabel('Error rate')
-    plt.legend(loc='lower right')
+    plt.xlabel('log$_10$(Weight decay values', size=24)
+    plt.ylabel('Error rate', size=24)
+    plt.legend(loc='lower right', prop={'size': 12})
     plt.title(title)
     plt.savefig(figname)
-    plt.show()
 
 
 def keep_probability_plots(network, k_fold_datasets_hyperparameters_tuning, learning_rate, title, figname):
@@ -51,9 +53,19 @@ def keep_probability_plots(network, k_fold_datasets_hyperparameters_tuning, lear
 
         plt.errorbar(keep_probability_values, average, yerr=std, lw=lw, label='Fold %d' % key)
 
-    plt.xlabel('Keep probability values')
-    plt.ylabel('Error rate')
-    plt.legend(loc='lower right')
+    fig = plt.figure(figsize=(11, 5), dpi=150)
+    ax = plt.subplot(111)
+
+    plt.xlabel('Keep probability', size=24)
+    plt.ylabel('Error rate', size=24)
+
+    plt.xticks(np.arange(0, 1.1, 0.1))
+
+    chartBox = ax.get_position()
+    ax.set_position([chartBox.x0, chartBox.y0, chartBox.width * 0.75, chartBox.height])
+    ax.legend(loc='upper center', bbox_to_anchor=(1.25, 0.7), shadow=False, ncol=1)
+
+
     plt.title(title)
     plt.savefig(figname)
 
@@ -70,9 +82,9 @@ def learning_rate_plots(network, k_fold_datasets_hyperparameters_tuning, title, 
 
         plt.errorbar(learning_rate_values, average, yerr=std, lw=lw, label='Fold %d' % key)
 
-    plt.xlabel('Learning rate values')
-    plt.ylabel('Error rate')
-    plt.legend(loc='lower right')
+    plt.xlabel('Learning rate values', size=24)
+    plt.ylabel('Error rate', size=24)
+    plt.legend(loc='lower right', prop={'size': 12})
     plt.title(title)
     plt.savefig(figname)
 
@@ -118,7 +130,7 @@ def plot_weight_decay(epigenetic_data, epigenetic_data_with_clusters):
             output_size=output_size)
     print "Got here"
     weight_decay_plots(MLP, k_fold_datasets_hyperparameters_tuning, 0.01,
-                           "Error rate of MLP agains different keep probabilities", 'mlp_wd.eps')
+                           "Error rate of MLP agains different weight decays", 'mlp_wd.eps')
     weight_decay_plots(RNN, k_fold_datasets_hyperparameters_tuning, 0.0001,
                            "Error rate of RNN again different keep probabilities", 'rnn_wd.eps')
 
@@ -131,7 +143,7 @@ def plot_weight_decay(epigenetic_data, epigenetic_data_with_clusters):
         [[128, 64, 32, 16], [128, 64, 32, 16]], [32, 16], output_size)
 
     weight_decay_plots(SNN, k_fold_datasets_hyperparameters_tuning, 0.05,
-                           "Error rate of MLP agains different keep probabilities", 'snn_wd.eps')
+                           "Error rate of MLP agains different weight decays", 'snn_wd.eps')
 
 
 def plot_learning_rate(epigenetic_data, epigenetic_data_with_clusters):
@@ -164,6 +176,9 @@ def plot_learning_rate(epigenetic_data, epigenetic_data_with_clusters):
 epigenetic_data = CancerPatientsData(num_folds=10, num_folds_hyperparameters_tuning=10)
 epigenetic_data_with_clusters = CancerPatientsDataWithModalities(num_folds=10, num_folds_hyperparameters_tuning=10)
 
+
+plot_keep_probability(epigenetic_data, epigenetic_data_with_clusters)
+
+
 plot_weight_decay(epigenetic_data, epigenetic_data_with_clusters)
 plot_learning_rate(epigenetic_data, epigenetic_data_with_clusters)
-plot_keep_probability(epigenetic_data, epigenetic_data_with_clusters)

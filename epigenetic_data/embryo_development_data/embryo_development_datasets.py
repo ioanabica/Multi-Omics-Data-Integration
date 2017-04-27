@@ -35,8 +35,8 @@ def normalise_data(gene_expressions):
     gene_expressions = np.array(gene_expressions)
     mean = np.mean(gene_expressions)
     variance = np.var(gene_expressions)
-
-    gene_expressions = (gene_expressions - mean) / variance
+    if variance!=0:
+        gene_expressions = (gene_expressions - mean) / variance
 
     #max = np.max(gene_expressions)
     #min = np.min(gene_expressions)
@@ -314,12 +314,10 @@ def create_k_fold_embryo_ids(k, embryo_stage_to_embryo_ids):
             k_fold_embryoIds[k-1] += embryoIds[(k-1)*group_size:]
 
     keys = k_fold_embryoIds.keys()
-    print k_fold_embryoIds
     for key in keys:
         embryoIds = k_fold_embryoIds[key]
         np.random.shuffle(embryoIds)
         k_fold_embryoIds[key] = embryoIds
-    print k_fold_embryoIds
 
     return k_fold_embryoIds
 

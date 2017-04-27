@@ -16,6 +16,9 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
     validation_accuracy_list = list()
     ROC_points = dict()
 
+    macro_average = dict()
+    micro_average = dict()
+
     class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data.label_to_one_hot_encoding)
     performance_metrics = dict()
 
@@ -29,7 +32,7 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
 
         learning_rate = 0.05
         weight_decay = 0.01
-        keep_probability = 0.7
+        keep_probability = 0.55
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -50,13 +53,29 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
         performance_metrics[key] = compute_evaluation_metrics_for_each_class(
             ffnn_confussion_matrix, class_id_to_class_symbol)
 
+        print performance_metrics[key]
+
+        micro_average[key] = compute_micro_average(performance_metrics[key])
+        macro_average[key] = compute_macro_average(performance_metrics[key])
+
+        micro_average[key]['accuracy'] = validation_accuracy
+        macro_average[key]['accuracy'] = validation_accuracy
+
         print ffnn_confussion_matrix
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
         ROC_points[key] = MLP_ROC_points
 
-    average_validation_accuracy = np.mean(validation_accuracy_list)
-    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    #average_validation_accuracy = np.mean(validation_accuracy_list)
+    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+
+    performance_metrics['micro'] = micro_average
+    performance_metrics['macro'] = macro_average
+
+    print "Micro"
+    average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
+    print "Macro"
+    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
 
     return confussion_matrix, ROC_points, performance_metrics
 
@@ -74,6 +93,9 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
     validation_accuracy_list = list()
     ROC_points = dict()
 
+    macro_average = dict()
+    micro_average = dict()
+
     class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data_with_clusters.label_to_one_hot_encoding)
     performance_metrics = dict()
 
@@ -87,7 +109,11 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 
         learning_rate = 0.05
         weight_decay = 0.01
-        keep_probability = 0.8
+        keep_probability = 0.5
+
+        print learning_rate
+        print weight_decay
+        print keep_probability
 
         training_dataset = k_fold_datasets_with_clusters[key]["training_dataset"]
         validation_dataset = k_fold_datasets_with_clusters[key]["validation_dataset"]
@@ -100,12 +126,30 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
         performance_metrics[key] = compute_evaluation_metrics_for_each_class(
             snn_confussion_matrix, class_id_to_class_symbol)
 
+        print performance_metrics[key]
+
+        micro_average[key] = compute_micro_average(performance_metrics[key])
+        macro_average[key] = compute_macro_average(performance_metrics[key])
+
+        micro_average[key]['accuracy'] = validation_accuracy
+        macro_average[key]['accuracy'] = validation_accuracy
+
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, snn_confussion_matrix)
         ROC_points[key] = snn_ROC_points
 
-    average_validation_accuracy = np.mean(validation_accuracy_list)
-    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    #average_validation_accuracy = np.mean(validation_accuracy_list)
+    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+
+    print "Micro"
+    performance_metrics['micro'] = micro_average
+    print "Macro"
+    performance_metrics['macro'] = macro_average
+
+    print "Micro"
+    average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
+    print "Macro"
+    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
 
     return confussion_matrix, ROC_points, performance_metrics
 
@@ -124,6 +168,9 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
     print class_id_to_class_symbol
 
     performance_metrics = dict()
+    macro_average = dict()
+    micro_average = dict()
+
 
     ROC_points = dict()
 
@@ -136,10 +183,13 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
         # Hyperparameters for Embryo Development data
+        #learning_rate = 0.0001
+        #weight_decay = 0.001
+        #keep_probability = 0.7
+
         learning_rate = 0.0001
         weight_decay = 0.001
-        keep_probability = 0.7
-
+        keep_probability = 0.6
         #learning_rate = 0.0005
         #weight_decay = 0.001
         #keep_probability = 1
@@ -164,13 +214,30 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
         performance_metrics[key] = compute_evaluation_metrics_for_each_class(
             rnn_confussion_matrix, class_id_to_class_symbol)
 
+        micro_average[key] = compute_micro_average(performance_metrics[key])
+        macro_average[key] = compute_macro_average(performance_metrics[key])
+
+        micro_average[key]['accuracy'] = validation_accuracy
+        macro_average[key]['accuracy'] = validation_accuracy
+
+        performance_metrics['micro'] = micro_average
+        performance_metrics['macro'] = macro_average
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)
         ROC_points[key] = rnn_ROC_points
 
-    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
-    average_validation_accuracy = np.mean(validation_accuracy_list)
+    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    #average_validation_accuracy = np.mean(validation_accuracy_list)
+
+
+    print "micro"
+    average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
+    print "macro"
+    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
+
+    performance_metrics['micro'] = micro_average
+    performance_metrics['macro'] = macro_average
 
     return confussion_matrix, ROC_points, performance_metrics
 

@@ -106,12 +106,11 @@ def plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points):
 
     plt.xlabel('False Positive Rate', size=24)
     plt.ylabel('True Positive Rate', size=24)
-    plt.legend(loc='lower right')
+    plt.legend(loc='lower right', prop={'size': 18})
 
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
 
-    plt.grid()
 
     plt.title('Mean ROC Curve after 10-fold CV', size=24)
 
@@ -153,7 +152,6 @@ def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_cla
         true_negatives = sum_over_columns.sum() - sum_over_columns[class_id] - \
                          sum_over_rows[class_id] + confussion_matrix[class_id][class_id]
 
-
         accuracy = (true_positives + true_negatives)/(true_positives + true_negatives + false_negatives + false_positives)
 
         if true_positives + false_positives == 0:
@@ -166,9 +164,15 @@ def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_cla
         else:
             sensitivity = true_positives / (true_positives + false_negatives)
 
-        f1_score = (2 * true_positives) / (2 * true_positives + false_positives + false_negatives)
 
-        if (true_negatives + false_positives == 0) or (true_negatives + false_negatives == 0):
+        if 2 * true_positives + false_positives + false_negatives == 0:
+            f1_score = 0
+        else:
+            f1_score = (2 * true_positives) / (2 * true_positives + false_positives + false_negatives)
+
+
+        if (true_negatives + false_positives == 0) or (true_negatives + false_negatives == 0) or \
+                (true_positives + false_positives == 0) or (true_positives + false_negatives == 0):
             MCC = 0
         else:
             MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
@@ -187,9 +191,6 @@ def compute_evaluation_metrics_for_each_class(confussion_matrix, class_id_to_cla
         class_symbol_to_evaluation_metrics[class_symbol]['sensitivity'] = sensitivity
         class_symbol_to_evaluation_metrics[class_symbol]['f1_score'] = f1_score
         class_symbol_to_evaluation_metrics[class_symbol]['MCC'] = MCC
-
-    print "Evaluation metrics for cancer class"
-    print class_symbol_to_evaluation_metrics['cancer']
 
     return class_symbol_to_evaluation_metrics
 
@@ -277,7 +278,9 @@ def compute_performance_metrics_for_multiclass_classification(performance_metric
     std_performance_metric['MCC'] = np.std(MCC)
     std_performance_metric['f1_score'] = np.std(f1_score)
 
+    print "average"
     print average_performance_metric
+    print "standard deviation"
     print std_performance_metric
 
     return 0
@@ -356,6 +359,12 @@ def paired_t_test_multiclass_classification(performance_metrics_first_model, per
     MCC_first_model = []
     f1_score_first_model = []
 
+    accuracy_first_model = []
+    precision_first_model = []
+    sensitivity_first_model = []
+    MCC_first_model = []
+    f1_score_first_model = []
+
     accuracy_second_model = []
     precision_second_model = []
     sensitivity_second_model = []
@@ -363,21 +372,24 @@ def paired_t_test_multiclass_classification(performance_metrics_first_model, per
     f1_score_second_model = []
 
     for key in keys:
+        fold_performance_metrics_first_model = performance_metrics_first_model[key]
+        fold_performance_metrics_second_model = performance_metrics_second_model[key]
 
-        accuracy_first_model += [performance_metrics_first_model['accuracy']]
-        accuracy_second_model += [performance_metrics_second_model['accuracy']]
+        accuracy_first_model += [fold_performance_metrics_first_model['accuracy']]
+        accuracy_second_model += [fold_performance_metrics_second_model['accuracy']]
 
-        precision_first_model += [performance_metrics_first_model['precision']]
-        precision_second_model += [performance_metrics_second_model['precision']]
+        precision_first_model += [fold_performance_metrics_first_model['precision']]
+        precision_second_model += [fold_performance_metrics_second_model['precision']]
 
-        sensitivity_first_model += [performance_metrics_first_model['sensitivity']]
-        sensitivity_second_model += [performance_metrics_second_model['sensitivity']]
+        sensitivity_first_model += [fold_performance_metrics_first_model['sensitivity']]
+        sensitivity_second_model += [fold_performance_metrics_second_model['sensitivity']]
 
-        MCC_first_model += [performance_metrics_first_model['MCC']]
-        MCC_second_model += [performance_metrics_second_model['MCC']]
+        MCC_first_model += [fold_performance_metrics_first_model['MCC']]
+        MCC_second_model += [fold_performance_metrics_second_model['MCC']]
 
-        f1_score_first_model += [performance_metrics_first_model['f1_score']]
-        f1_score_second_model += [performance_metrics_second_model['f1_score']]
+        f1_score_first_model += [fold_performance_metrics_first_model['f1_score']]
+        f1_score_second_model += [fold_performance_metrics_second_model['f1_score']]
+
 
     _, p_value = stats.ttest_rel(accuracy_first_model, accuracy_second_model)
     p_values['accuracy'] = p_value
@@ -394,6 +406,10 @@ def paired_t_test_multiclass_classification(performance_metrics_first_model, per
     _, p_value = stats.ttest_rel(MCC_first_model, MCC_second_model)
     p_values['MCC'] = p_value
 
+
+    print "P values"
+    print p_values
+
     return p_values
 
 
@@ -408,11 +424,11 @@ def compute_micro_average(class_symbol_to_performance_metrics):
     true_negatives = 0
     false_negatives = 0
 
-    for key in keys():
+    for key in keys:
         true_positives += class_symbol_to_performance_metrics[key]['true_positives']
         false_positives += class_symbol_to_performance_metrics[key]['false_positives']
         true_negatives += class_symbol_to_performance_metrics[key]['true_negatives']
-        true_negatives += class_symbol_to_performance_metrics[key]['false_negatives']
+        false_negatives += class_symbol_to_performance_metrics[key]['false_negatives']
 
     accuracy = (true_positives + true_negatives) / (true_positives + true_negatives + false_negatives + false_positives)
 
@@ -428,15 +444,22 @@ def compute_micro_average(class_symbol_to_performance_metrics):
 
     f1_score = (2 * true_positives) / (2 * true_positives + false_positives + false_negatives)
 
-    MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
-          (math.sqrt((true_positives + false_positives) * (true_positives + false_negatives) * \
-                     (true_negatives + false_positives) * (true_negatives + false_negatives)))
+    if (true_negatives + false_positives == 0) or (true_negatives + false_negatives == 0) or \
+            (true_positives + false_positives == 0) or (true_positives + false_negatives == 0):
+        MCC = 0
+    else:
+        MCC = (true_positives * true_negatives - false_positives * false_negatives) / \
+              (math.sqrt((true_positives + false_positives) * (true_positives + false_negatives) * \
+                         (true_negatives + false_positives) * (true_negatives + false_negatives)))
 
     micro_average['accuracy'] = accuracy
     micro_average['precision'] = precision
     micro_average['sensitivity'] = sensitivity
     micro_average['f1_score'] = f1_score
     micro_average['MCC'] = MCC
+
+    print "micro average"
+    print micro_average
 
     return micro_average
 
@@ -455,11 +478,16 @@ def compute_macro_average(class_symbol_to_performance_metrics):
 
     for key in keys:
 
-        accuracy += [class_symbol_to_performance_metrics[key]['accuracy']]
-        precision += [class_symbol_to_performance_metrics[key]['precision']]
-        sensitivity += [class_symbol_to_performance_metrics[key]['sensitivity']]
-        MCC += [class_symbol_to_performance_metrics[key]['MCC']]
-        f1_score += [class_symbol_to_performance_metrics[key]['f1_score']]
+        if (class_symbol_to_performance_metrics[key]['true_positives'] == 0) and \
+            (class_symbol_to_performance_metrics[key]['false_positives'] == 0) and \
+            (class_symbol_to_performance_metrics[key]['false_negatives'] == 0):
+            print "Missing class " + str(key)
+        else:
+            accuracy += [class_symbol_to_performance_metrics[key]['accuracy']]
+            precision += [class_symbol_to_performance_metrics[key]['precision']]
+            sensitivity += [class_symbol_to_performance_metrics[key]['sensitivity']]
+            MCC += [class_symbol_to_performance_metrics[key]['MCC']]
+            f1_score += [class_symbol_to_performance_metrics[key]['f1_score']]
 
     macro_performance_metrics['accuracy'] = np.mean(accuracy)
     macro_performance_metrics['precision'] = np.mean(precision)
@@ -467,6 +495,7 @@ def compute_macro_average(class_symbol_to_performance_metrics):
     macro_performance_metrics['MCC'] = np.mean(MCC)
     macro_performance_metrics['f1_score'] = np.mean(f1_score)
 
+    print "macro"
     print macro_performance_metrics
 
     return macro_performance_metrics
