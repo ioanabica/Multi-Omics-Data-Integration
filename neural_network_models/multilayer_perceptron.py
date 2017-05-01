@@ -67,7 +67,7 @@ class MultilayerPerceptron(object):
             validation_predictions = tf.nn.softmax(self.compute_predictions(validation_data, self.weights, self.biases, tf_keep_probability))
 
 
-        steps = 7000
+        steps = 5000
 
         with tf.Session(graph=graph) as session:
 

@@ -37,7 +37,6 @@ class CancerPatientsData(EpigeneticData):
         self.output_size = len(labels)
 
         k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
-        print k_fold_patient_ids
 
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_patient_ids, self.input_size, self.output_size,
@@ -181,7 +180,6 @@ class CancerPatientsDataDNAMethylationLevels(CancerPatientsData):
         self.output_size = len(labels)
 
         k_fold_patient_ids = create_k_fold_patient_ids(self.num_folds, self.label_to_patient_ids)
-        print k_fold_patient_ids
 
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_patient_ids, self.input_size, self.output_size,

@@ -88,7 +88,7 @@ class SuperlayeredNeuralNetwork(object):
             validation_predictions = tf.nn.softmax(self.compute_predictions(
                 s1_validation_data, s2_validation_data, weights, biases, tf_keep_probability))
 
-        steps = 8000
+        steps = 6000
 
         with tf.Session(graph=graph) as session:
 

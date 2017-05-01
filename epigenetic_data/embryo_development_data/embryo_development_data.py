@@ -33,7 +33,6 @@ class EmbryoDevelopmentData(EpigeneticData):
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
 
-        print k_fold_embryo_ids
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_embryo_ids, self.input_size, self.output_size,
             self.embryo_id_to_gene_expression, self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)
@@ -103,14 +102,12 @@ class EmbryoDevelopmentDataWithClusters(EmbryoDevelopmentData):
         self.num_clusters = num_clusters
         self.extract_clustering_data_from_gene_expression_file(clustering_algorithm)
         self.output_size = len(self.embryo_stage_to_embryo_ids.keys())
-        print self.embryo_id_to_gene_expression
 
     def get_k_fold_datasets(self):
         embryo_stages = self.embryo_stage_to_embryo_ids.keys()
         self.label_to_one_hot_encoding = create_one_hot_encoding(embryo_stages)
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
-        print k_fold_embryo_ids
 
         self.k_fold_datasets = create_k_fold_datasets_with_clusters(
             self.num_folds, k_fold_embryo_ids,
@@ -199,7 +196,6 @@ class EmbryoDevelopmentDataWithSingleCluster(EmbryoDevelopmentDataWithClusters):
 
         k_fold_embryo_ids = create_k_fold_embryo_ids(self.num_folds, self.embryo_stage_to_embryo_ids)
 
-        print k_fold_embryo_ids
         self.k_fold_datasets = create_k_fold_datasets(
             self.num_folds, k_fold_embryo_ids, self.input_data_size, self.output_size,
             embryo_id_to_gene_expression, self.label_to_one_hot_encoding, self.embryo_id_to_embryo_stage)

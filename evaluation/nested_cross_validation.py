@@ -32,7 +32,7 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
 
         learning_rate = 0.05
         weight_decay = 0.01
-        keep_probability = 0.55
+        keep_probability = 0.75
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -55,27 +55,27 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
 
         print performance_metrics[key]
 
-        micro_average[key] = compute_micro_average(performance_metrics[key])
+        """micro_average[key] = compute_micro_average(performance_metrics[key])
         macro_average[key] = compute_macro_average(performance_metrics[key])
 
         micro_average[key]['accuracy'] = validation_accuracy
-        macro_average[key]['accuracy'] = validation_accuracy
+        macro_average[key]['accuracy'] = validation_accuracy"""
 
         print ffnn_confussion_matrix
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, ffnn_confussion_matrix)
         ROC_points[key] = MLP_ROC_points
 
-    #average_validation_accuracy = np.mean(validation_accuracy_list)
-    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    average_validation_accuracy = np.mean(validation_accuracy_list)
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
 
-    performance_metrics['micro'] = micro_average
+    """performance_metrics['micro'] = micro_average
     performance_metrics['macro'] = macro_average
 
     print "Micro"
     average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
     print "Macro"
-    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
+    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)"""
 
     return confussion_matrix, ROC_points, performance_metrics
 
@@ -108,8 +108,8 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
             #network, k_fold_datasets_hyperparameters_tuning[key])
 
         learning_rate = 0.05
-        weight_decay = 0.01
-        keep_probability = 0.5
+        weight_decay = 0.001
+        keep_probability = 0.75
 
         print learning_rate
         print weight_decay
@@ -128,19 +128,20 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
 
         print performance_metrics[key]
 
-        micro_average[key] = compute_micro_average(performance_metrics[key])
+        """micro_average[key] = compute_micro_average(performance_metrics[key])
         macro_average[key] = compute_macro_average(performance_metrics[key])
 
         micro_average[key]['accuracy'] = validation_accuracy
-        macro_average[key]['accuracy'] = validation_accuracy
+        macro_average[key]['accuracy'] = validation_accuracy"""
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, snn_confussion_matrix)
         ROC_points[key] = snn_ROC_points
 
-    #average_validation_accuracy = np.mean(validation_accuracy_list)
-    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    average_validation_accuracy = np.mean(validation_accuracy_list)
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
 
+    """
     print "Micro"
     performance_metrics['micro'] = micro_average
     print "Macro"
@@ -149,12 +150,12 @@ def nested_cross_validation_on_SNN(network, epigenetic_data_with_clusters):
     print "Micro"
     average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
     print "Macro"
-    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
+    average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)"""
 
     return confussion_matrix, ROC_points, performance_metrics
 
 
-def nested_cross_validation_on_RNN(network, epigenetic_data):
+def nested_cross_validation_on_RNN(network, epigenetic_data, single_modality=False):
 
     k_fold_datasets, k_fold_datasets_hyperparameters_tuning = epigenetic_data.get_k_fold_datasets()
     output_size = epigenetic_data.output_size
@@ -165,7 +166,6 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
     validation_accuracy_list = list()
 
     class_id_to_class_symbol = compute_class_id_to_class_symbol(epigenetic_data.label_to_one_hot_encoding)
-    print class_id_to_class_symbol
 
     performance_metrics = dict()
     macro_average = dict()
@@ -189,10 +189,12 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
 
         learning_rate = 0.0001
         weight_decay = 0.001
-        keep_probability = 0.6
-        #learning_rate = 0.0005
-        #weight_decay = 0.001
-        #keep_probability = 1
+        keep_probability = 0.7
+
+        if single_modality:
+            learning_rate = 0.0005
+            weight_decay = 0.001
+            keep_probability = 1
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)
@@ -213,89 +215,31 @@ def nested_cross_validation_on_RNN(network, epigenetic_data):
 
         performance_metrics[key] = compute_evaluation_metrics_for_each_class(
             rnn_confussion_matrix, class_id_to_class_symbol)
+        print performance_metrics[key]
 
-        micro_average[key] = compute_micro_average(performance_metrics[key])
+        """micro_average[key] = compute_micro_average(performance_metrics[key])
         macro_average[key] = compute_macro_average(performance_metrics[key])
 
         micro_average[key]['accuracy'] = validation_accuracy
         macro_average[key]['accuracy'] = validation_accuracy
 
         performance_metrics['micro'] = micro_average
-        performance_metrics['macro'] = macro_average
+        performance_metrics['macro'] = macro_average"""
 
         validation_accuracy_list.append(validation_accuracy)
         confussion_matrix = np.add(confussion_matrix, rnn_confussion_matrix)
         ROC_points[key] = rnn_ROC_points
 
-    #average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
-    #average_validation_accuracy = np.mean(validation_accuracy_list)
+    average_performance_metrics = compute_average_performance_metrics_for_binary_classification(performance_metrics)
+    average_validation_accuracy = np.mean(validation_accuracy_list)
 
 
-    print "micro"
+    """print "micro"
     average_micro = compute_performance_metrics_for_multiclass_classification(micro_average)
     print "macro"
     average_macro = compute_performance_metrics_for_multiclass_classification(macro_average)
 
     performance_metrics['micro'] = micro_average
-    performance_metrics['macro'] = macro_average
+    performance_metrics['macro'] = macro_average"""
 
     return confussion_matrix, ROC_points, performance_metrics
-
-
-def plot_validation_accuracy(MLP_validation_accuracy, SNN_validation_accuracy, RNN_validation_accuracy):
-    plt.figure(1)
-
-    print "MLP accuracy"
-    print np.mean(MLP_validation_accuracy)
-
-    print "SNN accuracy"
-    print np.mean(SNN_validation_accuracy)
-
-    print "RNN accuracy"
-    print np.mean(RNN_validation_accuracy)
-
-    MLP, = plt.plot(range(num_folds), MLP_validation_accuracy, 'r-', label='Multilayer Perceptron NN')
-    SNN, = plt.plot(range(num_folds), SNN_validation_accuracy, 'g-', label='Superlayered NN')
-    RNN, = plt.plot(range(num_folds), RNN_validation_accuracy, 'b-', label='Recurrent NN')
-    plt.legend(handles=[MLP, SNN, RNN], loc='lower right')
-
-    axes = plt.gca()
-    axes.set_ylim([0, 110])
-
-    plt.title('K-fold Cross-Validation', fontsize=20)
-    plt.xlabel('Fold Number', fontsize=18)
-    plt.ylabel('Test Accuracy', fontsize=20)
-
-    plt.show()
-
-def plot_losses(MLP_losses, SNN_losses, RNN_losses):
-    plt.figure(1)
-
-    plt.subplot(121)
-    plt.plot(MLP_losses[0], 'r')
-
-    plt.title('Multilayer Perceptron Training Loss', fontsize=20)
-    plt.xlabel('Iteration number', fontsize=18)
-    plt.ylabel('Loss', fontsize=18)
-
-
-    plt.subplot(122)
-    plt.plot(SNN_losses[0], 'g')
-
-    plt.title('Superlayered Neural Network Training Loss', fontsize=20)
-    plt.xlabel('Iteration number', fontsize=18)
-    plt.ylabel('Loss', fontsize=18)
-
-    plt.show()
-
-    plt.figure(2)
-
-    plt.plot(RNN_losses[0], 'b')
-
-    plt.title('Recurrent Neural Network Training Loss', fontsize=20)
-    plt.xlabel('Iteration number', fontsize=18)
-    plt.ylabel('Loss', fontsize=18)
-
-    plt.show()
-
-

@@ -12,7 +12,9 @@ def plot_ROC_curves(ROC_points):
     mean_tpr = 0.0
     mean_fpr = np.linspace(0, 1, 100)
 
-    colors = ['red', 'blue', 'dark orange', 'purple', 'green']
+    fig = plt.figure(figsize=(11, 7), dpi=150)
+    ax = plt.subplot(111)
+    colors = ['r', 'g', 'b', 'm', 'y', 'c', 'pink', 'orange', 'indigo', 'k']
     lw = 2
 
     for key in keys:
@@ -30,14 +32,18 @@ def plot_ROC_curves(ROC_points):
     mean_tpr /= len(keys)
     mean_tpr[-1] = 1.0
     mean_auc = auc(mean_fpr, mean_tpr)
-    plt.plot(mean_fpr, mean_tpr, color='green', linestyle='--', label='Mean ROC (area = %0.3f)' % mean_auc, lw=3)
+    #plt.plot(mean_fpr, mean_tpr, color='green', linestyle='--', label='Mean ROC (area = %0.3f)' % mean_auc, lw=3)
 
-    plt.xlim([-0.05, 1.05])
-    plt.ylim([-0.05, 1.05])
+    plt.xlim([0.01, 1.01])
+    plt.ylim([0.01, 1.01])
 
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.legend(loc='lower right')
+    plt.xlabel('False Positive Rate', size='24')
+    plt.ylabel('True Positive Rate', size='24')
+
+    chartBox = ax.get_position()
+    ax.set_position([chartBox.x0, chartBox.y0, chartBox.width * 0.65, chartBox.height])
+    ax.legend(loc='upper center', bbox_to_anchor=(1.5, 0.9), shadow=False, ncol=1, prop={'size': 10})
+
     plt.show()
 
 
@@ -54,7 +60,7 @@ def plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points):
     snn_mean_fpr = np.linspace(0, 1, 100)
 
     colors = ['red', 'blue', 'dark orange', 'purple', 'green']
-    lw = 2
+    lw = 3
 
     for key in keys:
         # MLP
@@ -79,30 +85,89 @@ def plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points):
         snn_mean_tpr[0] = 0.0
 
 
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=lw, color='k', label='Random (area = 0.5)')
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=lw, color='k', label='Random (AUC = 0.500)')
 
     # MLP
     mlp_mean_tpr /= len(keys)
     mlp_mean_tpr[-1] = 1.0
     mlp_mean_auc = auc(mlp_mean_fpr, mlp_mean_tpr)
-    plt.plot(mlp_mean_fpr, mlp_mean_tpr, color='green', label='Mean ROC for MLP (area = %0.3f)' % mlp_mean_auc, lw=3)
+    plt.plot(mlp_mean_fpr, mlp_mean_tpr, color='green', label='MLP (AUC = %0.3f)' % mlp_mean_auc, lw=3)
 
     # RNN
     rnn_mean_tpr /= len(keys)
     rnn_mean_tpr[-1] = 1.0
     rnn_mean_auc = auc(rnn_mean_fpr, rnn_mean_tpr)
-    plt.plot(rnn_mean_fpr, rnn_mean_tpr, color='red', label='Mean ROC for RNN (area = %0.3f)' % rnn_mean_auc,
+    plt.plot(rnn_mean_fpr, rnn_mean_tpr, color='red', label='RNN (AUC = %0.3f)' % rnn_mean_auc,
              lw=3)
 
     # SNN
     snn_mean_tpr /= len(keys)
     snn_mean_tpr[-1] = 1.0
     snn_mean_auc = auc(snn_mean_fpr, snn_mean_tpr)
-    plt.plot(snn_mean_fpr, snn_mean_tpr, color='blue', label='Mean ROC for SNN(area = %0.3f)' % snn_mean_auc,
+    plt.plot(snn_mean_fpr, snn_mean_tpr, color='blue', label='SNN (AUC = %0.3f)' % snn_mean_auc,
              lw=3)
 
-    plt.xlim([-0.05, 1.05])
-    plt.ylim([-0.05, 1.05])
+    plt.xlim([-0.02, 1.02])
+    plt.ylim([-0.02, 1.02])
+
+    plt.xlabel('False Positive Rate', size=24)
+    plt.ylabel('True Positive Rate', size=24)
+    plt.legend(loc='lower right', prop={'size': 24})
+
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+
+
+    plt.title('Mean ROC curves after 10-fold outer CV', size=28)
+
+    plt.show()
+
+
+def plot_mean_ROC_curves_for_two_models(mlp_ROC_points, rnn_ROC_points):
+
+    keys = mlp_ROC_points.keys()
+    mlp_mean_tpr = 0.0
+    mlp_mean_fpr = np.linspace(0, 1, 100)
+
+    rnn_mean_tpr = 0.0
+    rnn_mean_fpr = np.linspace(0, 1, 100)
+
+    colors = ['red', 'blue', 'dark orange', 'purple', 'green']
+    lw = 3
+
+    for key in keys:
+        # MLP
+        y_true = mlp_ROC_points[key]['y_true']
+        y_score = mlp_ROC_points[key]['y_score']
+        fpr, tpr, thresholds = roc_curve(y_true, y_score, pos_label=1)
+        mlp_mean_tpr += interp(mlp_mean_fpr, fpr, tpr)
+        mlp_mean_tpr[0] = 0.0
+
+        # RNN
+        y_true = rnn_ROC_points[key]['y_true']
+        y_score = rnn_ROC_points[key]['y_score']
+        fpr, tpr, thresholds = roc_curve(y_true, y_score, pos_label=1)
+        rnn_mean_tpr += interp(rnn_mean_fpr, fpr, tpr)
+        rnn_mean_tpr[0] = 0.0
+
+
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=lw, color='k', label='Random (AUC = 0.500)')
+
+    # MLP
+    mlp_mean_tpr /= len(keys)
+    mlp_mean_tpr[-1] = 1.0
+    mlp_mean_auc = auc(mlp_mean_fpr, mlp_mean_tpr)
+    plt.plot(mlp_mean_fpr, mlp_mean_tpr, color='green', label='RNN trained on DNA methylation\nand gene expression data (AUC = %0.3f)' % mlp_mean_auc, lw=3)
+
+    # RNN
+    rnn_mean_tpr /= len(keys)
+    rnn_mean_tpr[-1] = 1.0
+    rnn_mean_auc = auc(rnn_mean_fpr, rnn_mean_tpr)
+    plt.plot(rnn_mean_fpr, rnn_mean_tpr, color='red', label='RNN trained on DNA methylation data (AUC = %0.3f)' % rnn_mean_auc,
+             lw=3)
+
+    plt.xlim([-0.02, 1.02])
+    plt.ylim([-0.02, 1.02])
 
     plt.xlabel('False Positive Rate', size=24)
     plt.ylabel('True Positive Rate', size=24)
@@ -111,10 +176,10 @@ def plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points):
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
 
-
-    plt.title('Mean ROC Curve after 10-fold CV', size=24)
+    plt.title('Mean ROC curves after 10-fold outer CV', size=28)
 
     plt.show()
+
 
 
 def compute_class_id_to_class_symbol(label_to_one_hot_encoding):
@@ -240,7 +305,13 @@ def compute_average_performance_metrics_for_binary_classification(performance_me
     print "Standard deviation"
     print std_performance_metrics
 
-    return 0
+    perf = dict()
+
+    perf['average'] = average_performance_metrics
+    perf['std'] = std_performance_metrics
+
+
+    return perf
 
 
 def compute_performance_metrics_for_multiclass_classification(performance_metrics):
@@ -479,7 +550,6 @@ def compute_macro_average(class_symbol_to_performance_metrics):
     for key in keys:
 
         if (class_symbol_to_performance_metrics[key]['true_positives'] == 0) and \
-            (class_symbol_to_performance_metrics[key]['false_positives'] == 0) and \
             (class_symbol_to_performance_metrics[key]['false_negatives'] == 0):
             print "Missing class " + str(key)
         else:
@@ -488,6 +558,7 @@ def compute_macro_average(class_symbol_to_performance_metrics):
             sensitivity += [class_symbol_to_performance_metrics[key]['sensitivity']]
             MCC += [class_symbol_to_performance_metrics[key]['MCC']]
             f1_score += [class_symbol_to_performance_metrics[key]['f1_score']]
+
 
     macro_performance_metrics['accuracy'] = np.mean(accuracy)
     macro_performance_metrics['precision'] = np.mean(precision)
@@ -499,3 +570,4 @@ def compute_macro_average(class_symbol_to_performance_metrics):
     print macro_performance_metrics
 
     return macro_performance_metrics
+
