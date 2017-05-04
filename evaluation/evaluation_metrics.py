@@ -299,11 +299,11 @@ def compute_average_performance_metrics_for_binary_classification(performance_me
     std_performance_metrics['MCC'] = np.std(MCC)
     std_performance_metrics['f1_score'] = np.std(f1_score)
 
-    print "Average performance meterics"
+    """print "Average performance meterics"
     print average_performance_metrics
 
     print "Standard deviation"
-    print std_performance_metrics
+    print std_performance_metrics"""
 
     perf = dict()
 

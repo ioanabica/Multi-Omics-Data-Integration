@@ -1,5 +1,7 @@
 import numpy as np
+from scipy import stats
 import math
+import matplotlib.pyplot as plt
 from evaluation_metrics import paired_t_test_binary_classification, compute_average_performance_metrics_for_binary_classification, \
     compute_class_id_to_class_symbol, compute_evaluation_metrics_for_each_class, \
     compute_performance_metrics_for_multiclass_classification, plot_mean_ROC_curves, paired_t_test_multiclass_classification, \
@@ -33,7 +35,7 @@ def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_cluster
 
 
 
-    """Evaluation metrics for cancer data"""
+    """Evaluation metrics for cancer data
 
 
 
@@ -50,11 +52,11 @@ def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_cluster
     print "Comparing RNN vs SNN"
     print p_values_rnn_snn
 
-    plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points)
+    #plot_mean_ROC_curves(mlp_ROC_points, rnn_ROC_points, snn_ROC_points)
 
-    plot_confussion_matrix_as_heatmap_for_cancer_data(mlp_confussion_matrix, "Confusion Matrix for MLP")
-    plot_confussion_matrix_as_heatmap_for_cancer_data(rnn_confussion_matrix, "Confusion Matrix for RNN")
-    plot_confussion_matrix_as_heatmap_for_cancer_data(snn_confussion_matrix, "Confusion Matrix for SNN")
+    #plot_confussion_matrix_as_heatmap_for_cancer_data(mlp_confussion_matrix, "Confusion Matrix for MLP")
+    #plot_confussion_matrix_as_heatmap_for_cancer_data(rnn_confussion_matrix, "Confusion Matrix for RNN")
+    #plot_confussion_matrix_as_heatmap_for_cancer_data(snn_confussion_matrix, "Confusion Matrix for SNN")"""
 
 
     """Evaluaiton for embryo data
@@ -86,10 +88,10 @@ def evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_cluster
     print "Comparing RNN vs SNN"
     print "Micro"
     p_values_rnn_snn_macro = paired_t_test_multiclass_classification(
-        rnn_performance_metrics['macro'], snn_performance_metrics['macro'])
+        rnn_performance_metrics['macro'], snn_performance_metrics['macro'])"""
 
+    return mlp_performance_metrics, rnn_performance_metrics, snn_performance_metrics
 
-    return mlp_performance_metrics, rnn_performance_metrics, snn_performance_metrics"""
 
 
 def evaluate_feed_forward_neural_network(epigenetic_data):
@@ -192,7 +194,7 @@ def evaluate_recurrent_neural_network(epigenetic_data):
 
     recurrent_neural_network = RecurrentNeuralNetwork(
         input_sequence_length=input_data_size/4, input_step_size=4,
-        LSTM_units_state_size=[32, 128], hidden_units=[128, 32],
+        LSTM_units_state_size=[64, 128], hidden_units=[128, 64],
         output_size=output_size)
 
     confussion_matrix, ROC_points, performance_metrics = \
@@ -238,21 +240,21 @@ def get_embryo_development_data(clustering_algorithm):
 
 def get_cancer_data(noise_mean=0, noise_stddev=0):
 
-    noise_mean = 0
-    noise_stddev = 0.03
-
     print "Noise Characteristics"
     print noise_mean
     print noise_stddev
 
     epigenetic_data = CancerPatientsData(num_folds=10, num_folds_hyperparameters_tuning=3)
-    #epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
+    if noise_stddev != 0:
+        epigenetic_data.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_with_clusters = CancerPatientsDataWithModalities(num_folds=10, num_folds_hyperparameters_tuning=3)
-    #epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
+    if noise_stddev != 0:
+        epigenetic_data_with_clusters.add_Gaussian_noise(noise_mean, noise_stddev)
 
     epigenetic_data_for_single_cluster = CancerPatientsDataDNAMethylationLevels(num_folds=10, num_folds_hyperparameters_tuning=3)
-    #epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
+    if noise_stddev != 0:
+        epigenetic_data_for_single_cluster.add_Gaussian_noise(noise_mean, noise_stddev)
 
     return epigenetic_data, epigenetic_data_with_clusters, epigenetic_data_for_single_cluster
 
@@ -364,12 +366,12 @@ def compare_RNN_on_different_modalities():
     output_size = epigenetic_data_for_single_cluster.output_size
 
     recurrent_neural_network = RecurrentNeuralNetwork(
-        input_sequence_length=input_data_size / 4, input_step_size=4,
+        input_sequence_length=input_data_size / 2, input_step_size=2,
         LSTM_units_state_size=[32, 64], hidden_units=[32, 32],
         output_size=output_size)
 
     DNA_confussion_matrix, DNA_ROC_points, DNA_performance_metrics = \
-        nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data, single_modality=True)
+        nested_cross_validation_on_RNN(recurrent_neural_network, epigenetic_data_for_single_cluster, single_modality=True)
 
     p_values = paired_t_test_binary_classification(performance_metrics, DNA_performance_metrics)
 
@@ -397,50 +399,88 @@ def compare_MLP_on_different_modalities():
     plot_mean_ROC_curves_for_two_models(mlp_ROC_points, DNA_mlp_ROC_points)
 
 
-compare_RNN_on_different_modalities()
+#compare_RNN_on_different_modalities()
 
 def plot_noise_resistance():
 
-    stddev = [0.1 * i for i in range(20)]
+    stddev = [0.1 * i for i in range(20, 40)]
     print stddev
 
 
     mlp_points = []
     mlp_std = []
 
+    mlp_points_MCC = []
+    mlp_std_MCC = []
+
     rnn_points = []
     rnn_std = []
+
+    rnn_points_MCC = []
+    rnn_std_MCC = []
 
     snn_points = []
     snn_std = []
 
+    snn_points_MCC = []
+    snn_std_MCC = []
+
     for std in stddev:
-        print std
+        print "Computing for " + str(std)
         epigenetic_data, epigenetic_data_with_clusters, _ = get_cancer_data(noise_mean=0, noise_stddev=std)
         mlp_perf, rnn_perf, snn_perf = evaluate_neural_network_models(epigenetic_data, epigenetic_data_with_clusters)
 
         mlp_avg = compute_average_performance_metrics_for_binary_classification(mlp_perf)
-        mlp_points += [mlp_avg['accuracy']]
-        mlp_std += [mlp_avg['std']]
+        mlp_points += [mlp_avg['average']['accuracy']]
+        mlp_std += [mlp_avg['std']['accuracy']]
 
+        mlp_points_MCC += [mlp_avg['average']['MCC']]
+        mlp_std_MCC += [mlp_avg['std']['MCC']]
+
+        print "MLP Accuracy"
         print mlp_points
         print mlp_std
 
+        print "MLP MCC"
+        print mlp_points_MCC
+        print mlp_std_MCC
 
         rnn_avg = compute_average_performance_metrics_for_binary_classification(rnn_perf)
-        rnn_points += [rnn_avg['accuracy']]
-        rnn_std += [rnn_avg['accuracy']]
+        rnn_points += [rnn_avg['average']['accuracy']]
+        rnn_std += [rnn_avg['std']['accuracy']]
 
+        rnn_points_MCC += [rnn_avg['average']['MCC']]
+        rnn_std_MCC += [rnn_avg['std']['MCC']]
+
+        print "RNN Accuracy"
         print rnn_points
         print rnn_std
 
-        snn_avg = compute_average_performance_metrics_for_binary_classification(snn_perf)
-        snn_points += [snn_avg['accuracy']]
-        snn_std += [snn_avg['std']]
+        print "RNN MCC"
+        print rnn_points_MCC
+        print rnn_std_MCC
 
+        snn_avg = compute_average_performance_metrics_for_binary_classification(snn_perf)
+        snn_points += [snn_avg['average']['accuracy']]
+        snn_std += [snn_avg['std']['accuracy']]
+
+        snn_points_MCC += [snn_avg['average']['MCC']]
+        snn_std_MCC += [snn_avg['std']['MCC']]
+
+        print 'SNN Accuracy'
         print snn_points
         print snn_std
 
+        print 'SNN MCC'
+        print snn_points_MCC
+        print snn_std_MCC
+
+
+
+
+
+
+plot_noise_resistance()
 
 #compare_clustering_on_MLP()
 #compare_clustering_algorithms()
@@ -462,3 +502,5 @@ def plot_noise_resistance():
 
 #print "Evaluate for single modality"
 #evaluate_neural_network_models(epigenetic_data_for_single_cluster, epigenetic_data_with_clusters)
+
+

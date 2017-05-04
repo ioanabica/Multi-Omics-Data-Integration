@@ -4,12 +4,10 @@ from neural_network_models.recurrent_neural_network import RecurrentNeuralNetwor
 from neural_network_models.multilayer_perceptron import MultilayerPerceptron
 
 
-
 num_classes = 2
-num_genes = 256
-num_shifted_genes = 16
-training_examples_for_class = 200
-validation_examples_for_class = 40
+num_genes = 64
+training_examples_for_class = 500
+validation_examples_for_class = 100
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -38,32 +36,15 @@ def normalize_data(data_point):
     return normalized_data
 
 
-def create_data_point(num_genes, class_id, class_id_to_shifted_genes):
+def create_data_point(num_genes, class_id, class_id_to_shifted_genes, shifted_mean):
     mean = 0
-    stddev = 1
+    stddev = 0.4
     data_point = np.random.normal(mean, stddev, num_genes)
-
-    shifted_mean = 1
-
-    """
-    start_class_genes = class_id * (num_genes/num_classes)
-    end_class_genes = (class_id + 1) * (num_genes/num_classes)
-    data_point[start_class_genes:end_class_genes] = \
-        np.random.normal(shifted_mean, stddev, num_genes/num_classes)
-
-
-    class_gene = class_id
-    for index in range(num_shifted_genes):
-        if(class_gene < num_genes)
-            data_point[class_gene] = np.random.normal(shifted_mean, stddev, 1)
-            class_gene += """
-
 
     shifted_genes = class_id_to_shifted_genes[class_id]
 
     for shifted_gene in shifted_genes:
         data_point[shifted_gene] = np.random.normal(shifted_mean, stddev, 1)
-
 
     return data_point
 
@@ -75,7 +56,7 @@ def create_one_hot_encoding(class_id):
     return one_hot_encoding
 
 
-def create_training_dataset(class_id_to_shifted_genes):
+def create_training_dataset(class_id_to_shifted_genes, shifted_mean):
     """
 
     :return:
@@ -90,7 +71,7 @@ def create_training_dataset(class_id_to_shifted_genes):
     for class_id in range(num_classes):
         for index in range(training_examples_for_class):
             training_data[class_id * training_examples_for_class + index, :] = \
-                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes))
+                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes, shifted_mean))
             training_labels[class_id * training_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
     data_and_labels = (zip(training_data, training_labels))
@@ -104,7 +85,7 @@ def create_training_dataset(class_id_to_shifted_genes):
     return training_dataset
 
 
-def create_validation_dataset(class_id_to_shifted_genes):
+def create_validation_dataset(class_id_to_shifted_genes, shifted_mean):
     """
 
     :return:
@@ -119,7 +100,7 @@ def create_validation_dataset(class_id_to_shifted_genes):
     for class_id in range(num_classes):
         for index in range(validation_examples_for_class):
             validation_data[class_id * validation_examples_for_class + index, :] = \
-                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes))
+                normalize_data(create_data_point(num_genes, class_id, class_id_to_shifted_genes, shifted_mean))
             validation_labels[class_id * validation_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
     validation_dataset["validation_data"] = validation_data
@@ -141,26 +122,30 @@ def create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes):
 
 class SyntheticData(object):
 
-    class_id_to_shifted_genes = create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes)
-    print class_id_to_shifted_genes
+    def __init__(self, num_shifted_genes, shifted_mean):
+        self.num_shifted_genes = num_shifted_genes
+        self.shifted_mean = shifted_mean
+        self.class_id_to_shifted_genes = create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes)
+        self.training_dataset = create_training_dataset(self.class_id_to_shifted_genes, shifted_mean)
+        self.validation_dataset = create_validation_dataset(self.class_id_to_shifted_genes, shifted_mean)
 
-    training_dataset = create_training_dataset(class_id_to_shifted_genes)
-    validation_dataset = create_validation_dataset(class_id_to_shifted_genes)
+    def test_MLP(self):
+        ffnn = MultilayerPerceptron(num_genes, [256, 128, 64, 32], num_classes)
+        validation_accuracy, ffnn_confussion_matrix, ROC_points = ffnn.train_and_evaluate(
+            self.training_dataset, self.validation_dataset, 0.05, 0.0, 1)
+        print ffnn_confussion_matrix
 
-    ffnn = MultilayerPerceptron(num_genes, [256, 128, 64, 32], num_classes)
-    validation_accuracy, ffnn_confussion_matrix, ROC_points = ffnn.train_and_evaluate(training_dataset, validation_dataset, 0.05, 0.01, 0.5)
+    def test_RNN(self):
+        recurrent_neural_network = RecurrentNeuralNetwork(
+            input_sequence_length=8, input_step_size=8,
+            LSTM_units_state_size=[64, 128], hidden_units=[128, 64],
+            output_size=num_classes)
 
-    print ffnn_confussion_matrix
+        learning_rate = 0.0001
+        weight_decay = 0.001
+        keep_probability = 0.7
 
-    recurrent_neural_network = RecurrentNeuralNetwork(
-        input_sequence_length=16, input_step_size=16,
-        LSTM_units_state_size=[64, 256], hidden_units=[128, 64],
-        output_size=num_classes)
-
-    learning_rate = 0.0001
-    weight_decay = 0.01
-    keep_probability = 0.7
-
-    validation_accuracy, ffnn_confussion_matrix, ROC_points = recurrent_neural_network.train_and_evaluate(
-        training_dataset, validation_dataset,
-        learning_rate, weight_decay, keep_probability)
+        validation_accuracy, rnn_confussion_matrix, ROC_points = recurrent_neural_network.train_and_evaluate(
+            self.training_dataset, self.validation_dataset,
+            learning_rate, weight_decay, keep_probability)
+        print rnn_confussion_matrix

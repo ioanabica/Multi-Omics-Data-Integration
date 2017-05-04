@@ -32,7 +32,7 @@ def nested_cross_validation_on_MLP(network, epigenetic_data):
 
         learning_rate = 0.05
         weight_decay = 0.01
-        keep_probability = 0.75
+        keep_probability = 0.6
 
         print "Learning rate" + str(learning_rate)
         print "Weight decay" + str(weight_decay)

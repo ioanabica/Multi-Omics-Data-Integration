@@ -1,17 +1,16 @@
 import numpy as np
 
-from gene_clustering import hierarchical_clustering
+from gene_clustering.hierarchical_clustering import hierarchical_clustering
+from gene_clustering.k_means_clusters import k_means_clustering
 from neural_network_models.superlayered_neural_network import SuperlayeredNeuralNetwork
 
-num_classes = 7
+num_classes = 2
 num_clusters = 2
-#num_genes = 64
-num_shifted_genes = 16
-training_examples_for_class = 10
-validation_examples_for_class = 2
+training_examples_for_class = 500
+validation_examples_for_class = 100
 
-cluster_1_num_genes = 256
-cluster_2_num_genes = 256
+cluster_1_num_genes = 64
+cluster_2_num_genes = 64
 
 num_training_examples = num_classes * training_examples_for_class
 num_validation_examples = num_classes * validation_examples_for_class
@@ -40,10 +39,9 @@ def normalize_data(data_point):
     return normalized_data
 
 
-def create_data_point(class_id, class_id_to_shifted_genes, num_genes, mean):
-    stddev = 1
+def create_data_point(class_id, class_id_to_shifted_genes, num_genes, mean, shifted_mean):
+    stddev = 0.5
     data_point = np.random.normal(mean, stddev, num_genes)
-    shifted_mean = 5
 
     shifted_genes = class_id_to_shifted_genes[class_id]
 
@@ -60,7 +58,11 @@ def create_one_hot_encoding(class_id):
     return one_hot_encoding
 
 
-def create_training_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_to_gene_expressions_mean_value, clusters_size):
+def create_training_dataset(
+        class_id_to_shifted_genes,
+        cluster_id_to_class_id_to_gene_expressions_mean_value,
+        clusters_size,
+        shifted_mean):
 
     training_dataset = dict()
     training_dataset["training_data"] = dict()
@@ -80,12 +82,16 @@ def create_training_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_to
         for index in range(training_examples_for_class):
 
             cluster_1_training_data[class_id * training_examples_for_class + index, :] = \
-                normalize_data(create_data_point(class_id, class_id_to_shifted_genes,
-                    cluster_1_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[0][class_id]))
+                normalize_data(create_data_point(
+                    class_id, class_id_to_shifted_genes,
+                    cluster_1_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[0][class_id],
+                    shifted_mean))
 
             cluster_2_training_data[class_id * training_examples_for_class + index, :] = \
-                normalize_data(create_data_point(class_id, class_id_to_shifted_genes,
-                    cluster_2_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[1][class_id]))
+                normalize_data(create_data_point(
+                    class_id, class_id_to_shifted_genes,
+                    cluster_2_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[1][class_id],
+                    shifted_mean))
 
             training_labels[class_id * training_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
@@ -98,7 +104,11 @@ def create_training_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_to
     return training_dataset
 
 
-def create_validation_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_to_gene_expressions_mean_value, clusters_size):
+def create_validation_dataset(
+        class_id_to_shifted_genes,
+        cluster_id_to_class_id_to_gene_expressions_mean_value,
+        clusters_size,
+        shifted_mean):
 
     validation_dataset = dict()
     validation_dataset["validation_data"] = dict()
@@ -117,12 +127,16 @@ def create_validation_dataset(class_id_to_shifted_genes, cluster_id_to_class_id_
     for class_id in range(num_classes):
         for index in range(validation_examples_for_class):
             cluster_1_validation_data[class_id * validation_examples_for_class + index, :] = \
-                normalize_data(create_data_point(class_id, class_id_to_shifted_genes,
-                    cluster_1_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[0][class_id]))
+                normalize_data(create_data_point(
+                    class_id, class_id_to_shifted_genes,
+                    cluster_1_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[0][class_id],
+                    shifted_mean))
 
             cluster_2_validation_data[class_id * validation_examples_for_class + index, :] = \
-                normalize_data(create_data_point(class_id, class_id_to_shifted_genes,
-                    cluster_2_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[1][class_id]))
+                normalize_data(create_data_point(
+                    class_id, class_id_to_shifted_genes,
+                    cluster_2_num_genes, cluster_id_to_class_id_to_gene_expressions_mean_value[1][class_id],
+                    shifted_mean))
 
             validation_labels[class_id * validation_examples_for_class + index, :] = create_one_hot_encoding(class_id)
 
@@ -201,44 +215,52 @@ def create_class_id_to_shifted_genes(num_classes, num_genes, num_shifted_genes):
 
 
 class SyntheticDataWithClusters(object):
-
-    class_id_to_shifted_genes = create_class_id_to_shifted_genes(
-        num_classes, min(cluster_1_num_genes, cluster_2_num_genes), num_shifted_genes)
-    print class_id_to_shifted_genes
-
-    cluster_id_to_class_id_to_gene_expression_mean_value = create_cluster_id_to_class_id_to_gene_expressions_mean_value(
-        num_clusters, num_classes)
-
-    training_dataset_with_clusters = create_training_dataset(
-        class_id_to_shifted_genes,
-        cluster_id_to_class_id_to_gene_expression_mean_value,
-        [cluster_1_num_genes, cluster_2_num_genes])
-
-    validation_dataset_with_clusters = create_validation_dataset(
-        class_id_to_shifted_genes,
-        cluster_id_to_class_id_to_gene_expression_mean_value,
-        [cluster_1_num_genes, cluster_2_num_genes])
-
-    data_for_clustering = create_data_for_clustering(
-        class_id_to_shifted_genes,
-        cluster_id_to_class_id_to_gene_expression_mean_value,
-        [cluster_1_num_genes, cluster_2_num_genes])
+    def __init__(self, num_shifted_genes, shifted_mean):
+        self.num_shifted_genes = num_shifted_genes
+        self.shifted_mean = shifted_mean
+        self.class_id_to_shifted_genes = create_class_id_to_shifted_genes(
+            num_classes, min(cluster_1_num_genes, cluster_2_num_genes), num_shifted_genes)
+        self.cluster_id_to_class_id_to_gene_expression_mean_value = \
+            create_cluster_id_to_class_id_to_gene_expressions_mean_value(num_clusters, num_classes)
+        self.training_dataset_with_clusters = create_training_dataset(
+            self.class_id_to_shifted_genes,
+            self.cluster_id_to_class_id_to_gene_expression_mean_value,
+            [cluster_1_num_genes, cluster_2_num_genes], shifted_mean)
+        self.validation_dataset_with_clusters = create_validation_dataset(
+            self.class_id_to_shifted_genes,
+            self.cluster_id_to_class_id_to_gene_expression_mean_value,
+            [cluster_1_num_genes, cluster_2_num_genes], shifted_mean)
 
 
-    superlayered_nn = SuperlayeredNeuralNetwork(
-        [cluster_1_num_genes, cluster_2_num_genes],
-        [[512, 256, 128, 64], [512, 256, 128, 64]],
-        [128, 32],
-        num_classes)
+    def test_SNN(self):
+        superlayered_nn = SuperlayeredNeuralNetwork(
+            [cluster_1_num_genes, cluster_2_num_genes],
+            [[256, 128, 64, 32], [256, 128, 64, 32]],
+            [128, 32],
+            num_classes)
+        learning_rate = 0.05
+        weight_decay = 0.05
+        keep_probability = 0.5
+
+        validation_accuraty, confussion_matrix, ROC_points = superlayered_nn.train_and_evaluate(
+            self.training_dataset_with_clusters, self.validation_dataset_with_clusters, learning_rate, weight_decay,
+            keep_probability)
+
+        print confussion_matrix
+
+    def test_clustering_algorithm(self):
+
+        data_for_clustering = create_data_for_clustering(
+            self.class_id_to_shifted_genes,
+            self.cluster_id_to_class_id_to_gene_expression_mean_value,
+            [cluster_1_num_genes, cluster_2_num_genes])
+
+        _, cluster_assig = hierarchical_clustering(data_for_clustering, 2)
+        print cluster_assig
+
+        _, cluster_assig = k_means_clustering(data_for_clustering, 2)
 
 
-    learning_rate = 0.05
-    weight_decay = 0.05
-    keep_probability = 0.5
 
 
-    validation_accuraty, confussion_matrix = superlayered_nn.train_and_evaluate(
-        training_dataset_with_clusters, validation_dataset_with_clusters, learning_rate, weight_decay, keep_probability)
 
-
-    print confussion_matrix
