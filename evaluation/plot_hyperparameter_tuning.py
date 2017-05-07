@@ -131,7 +131,7 @@ def plot_learning_rate(epigenetic_data, epigenetic_data_with_clusters):
             LSTM_units_state_size=[32, 128], hidden_units=[128, 32],
             output_size=output_size)
 
-    learning_rate_plots(MLP, k_fold_datasets_hyperparameters_tuning, 'mlp_ln')
+    #learning_rate_plots(MLP, k_fold_datasets_hyperparameters_tuning, 'mlp_ln')
     #learning_rate_plots(RNN, k_fold_datasets_hyperparameters_tuning, 'rnn_ln')
 
 
@@ -142,7 +142,7 @@ def plot_learning_rate(epigenetic_data, epigenetic_data_with_clusters):
         [clusters_size[0], clusters_size[1]],
         [[128, 64, 32, 16], [128, 64, 32, 16]], [32, 16], output_size)
 
-    #learning_rate_plots(SNN, k_fold_datasets_hyperparameters_tuning, 'snn_ln ')
+    learning_rate_plots(SNN, k_fold_datasets_hyperparameters_tuning, 'snn_ln')
 
 
 epigenetic_data = CancerPatientsData(num_folds=10, num_folds_hyperparameters_tuning=10)
@@ -246,20 +246,22 @@ def plots_for_ln(filenme, title):
         std = f.readline()
 
         average = average.split(',')
+        print average
         average = [float(element) for element in average]
 
         std = std.split(',')
         std = [float(element) for element in std]
 
-        plt.errorbar(learning_rate_values, average, yerr=std, label='Fold #%d' % key, fmt='-')
+        plt.errorbar(learning_rate_values, average, yerr=std, label='Fold #%d' % key, ls='-')
 
     plt.xlabel('log$_{10}$(Learning rate)', size=16)
     plt.ylabel('Error rate', size=16)
 
     plt.xticks(np.arange(-5.5, 1.55, 0.5))
-    plt.yticks(np.arange(0.05, 0.27, 0.05))
-    plt.ylim(0, 0.27)
-    plt.legend(loc='upper center', prop={'size': 10}, ncol=2, numpoints=1)
+    plt.yticks(np.arange(0.05, 0.20, 0.05))
+    plt.ylim(0, 0.2)
+    plt.xlim(-4.5, 1.55)
+    plt.legend(loc='upper center', prop={'size': 10}, ncol=2)
 
     chartBox = ax.get_position()
     #ax.set_position([chartBox.x0, chartBox.y0, chartBox.width * 0.75, chartBox.height])
@@ -268,7 +270,7 @@ def plots_for_ln(filenme, title):
     plt.show()
 
 
-plots_for_ln('mlp_ln', "Error rate of MLP against different learning rate values")
+plots_for_ln('snn_ln', "Error rate of SNN against different learning rate values")
 
 
 #plots_for_wd('snn_wd', "Error rate of SNN against different weight decay values")

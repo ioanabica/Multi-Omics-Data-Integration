@@ -40,7 +40,7 @@ def normalize_data(data_point):
 
 
 def create_data_point(class_id, class_id_to_shifted_genes, num_genes, mean, shifted_mean):
-    stddev = 0.5
+    stddev = 0.4
     data_point = np.random.normal(mean, stddev, num_genes)
 
     shifted_genes = class_id_to_shifted_genes[class_id]

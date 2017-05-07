@@ -8,7 +8,7 @@ def main(argv):
     _, args = getopt.getopt(argv, [])
 
     num_shifted_genes = int(args[0])
-    shifted_mean = int(args[1])
+    shifted_mean = float(args[1])
 
     synthetic_data = SyntheticData(num_shifted_genes, shifted_mean)
     synthetic_data_with_clusters = SyntheticDataWithClusters(num_shifted_genes, shifted_mean)
