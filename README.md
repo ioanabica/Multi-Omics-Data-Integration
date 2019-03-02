@@ -1,2 +1,2 @@
-# Part-II-Project
-Comparative Analysis of Neural Network Architectures for Epigenetics Inference
+# Multi-omics data integration using cross-modal neural networks
+https://www.elen.ucl.ac.be/Proceedings/esann/esannpdf/es2018-93.pdf
